@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use strum_macros::{EnumIter, EnumString};
 
 static RULES: &str = "
 *** Royals ***
@@ -17,7 +17,7 @@ When the card is played an action might be performed based on the type of card i
 At the beginning a card is put to the side, that is hidden an not used except for the special case, when the last card played is a Prince.
 If all opponents are protected one may choose to not do anything.";
 
-#[derive(Debug, PartialEq, Copy, Clone, EnumIter, PartialOrd)]
+#[derive(Debug, PartialEq, Copy, Clone, PartialOrd, EnumIter, EnumString)]
 pub enum Card {
     Guardian,
     Priest,
@@ -76,26 +76,6 @@ impl Card {
             Card::King => "King",
             Card::Contess => "Contess",
             Card::Princess => "Princess",
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct ParseCardError;
-
-impl FromStr for Card {
-    type Err = ParseCardError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Guardian" => Ok(Card::Guardian),
-            "Priest" => Ok(Card::Priest),
-            "Baron" => Ok(Card::Baron),
-            "Maid" => Ok(Card::Maid),
-            "Prince" => Ok(Card::Prince),
-            "King" => Ok(Card::King),
-            "Contess" => Ok(Card::Contess),
-            "Princess" => Ok(Card::Princess),
-            _ => Err(ParseCardError),
         }
     }
 }
