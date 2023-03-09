@@ -4,6 +4,7 @@ use std::{
     io::{self, BufRead, Write},
     str::FromStr,
 };
+use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 static RULES: &str = "
@@ -50,21 +51,10 @@ impl Card {
         }
     }
     fn rules() -> String {
-        Card::Guardian.rule().to_string()
-            + "\n"
-            + &Card::Priest.rule().to_string()
-            + "\n"
-            + &Card::Baron.rule().to_string()
-            + "\n"
-            + &Card::Maid.rule().to_string()
-            + "\n"
-            + &Card::Prince.rule().to_string()
-            + "\n"
-            + &Card::King.rule().to_string()
-            + "\n"
-            + &Card::Contess.rule().to_string()
-            + "\n"
-            + &Card::Princess.rule().to_string()
+        Card::iter()
+            .map(|c| c.rule().to_string())
+            .collect::<Vec<_>>()
+            .join("\n")
             + "\n"
     }
     fn needs_guess(&self) -> bool {
