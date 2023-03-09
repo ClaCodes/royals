@@ -68,10 +68,7 @@ impl Card {
             + "\n"
     }
     fn needs_guess(&self) -> bool {
-        match self {
-            Card::Guardian => true,
-            _ => false,
-        }
+        self == &Card::Guardian
     }
     fn needs_opponent(&self) -> bool {
         match self {
@@ -399,7 +396,7 @@ impl Play {
             guess_str = "\n\tGuess: ".to_string() + &g.name().to_string();
         }
         let st = "\n\t".to_string() + self.card.name();
-        return st + &op_str + &guess_str;
+        st + &op_str + &guess_str
     }
 }
 impl FromStr for Play {
@@ -507,12 +504,12 @@ pub struct Player {
 }
 impl Player {
     fn new(name: String, interface: Box<dyn PlayerInterface>) -> Self {
-        return Self {
+        Self {
             name,
             interface,
             hand_cards: vec![],
             protected: false,
-        };
+        }
     }
 }
 
@@ -718,7 +715,7 @@ impl GameState {
                 return false;
             }
         }
-        return true;
+        true
     }
     fn handle_play(&mut self, p: Play) {
         let index = self.players[self.players_turn]
