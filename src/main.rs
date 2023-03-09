@@ -160,6 +160,7 @@ impl PlayerInterface for RandomPlayingComputer {
 struct ConsolePlayer {
     ind: usize,
 }
+
 impl ConsolePlayer {
     fn query_user(
         &self,
@@ -264,6 +265,7 @@ impl ConsolePlayer {
         }
     }
 }
+
 impl PlayerInterface for ConsolePlayer {
     fn notify(&self, game_log: &Vec<Event>, players: &Vec<Player>) {
         println!("================================================");
@@ -373,6 +375,7 @@ impl Play {
         format!("\n\t{}{}{}", self.card.name(), op_str, guess_str)
     }
 }
+
 impl FromStr for Play {
     type Err = ParsePlayError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -476,6 +479,7 @@ pub struct Player {
     hand_cards: Vec<Card>,
     protected: bool,
 }
+
 impl Player {
     fn new(name: String, interface: Box<dyn PlayerInterface>) -> Self {
         Self {
