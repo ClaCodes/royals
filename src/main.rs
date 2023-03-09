@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter};
+use strum_macros::{Display, EnumIter, EnumString};
 
 static RULES: &str = "
 *** Royals ***
@@ -17,7 +17,7 @@ When the card is played an action might be performed based on the type of card i
 At the beginning a card is put to the side, that is hidden an not used except for the special case, when the last card played is a Prince.
 If all opponents are protected one may choose to not do anything.";
 
-#[derive(Debug, PartialEq, Copy, Clone, PartialOrd, EnumIter, Display)]
+#[derive(Debug, PartialEq, Copy, Clone, PartialOrd, EnumIter, EnumString, Display)]
 pub enum Card {
     Guardian,
     Priest,
