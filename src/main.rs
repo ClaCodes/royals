@@ -4,8 +4,8 @@ use std::{
     io::{self, BufRead, Write},
     str::FromStr,
 };
-use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter, EnumString};
+use strum::{EnumMessage, IntoEnumIterator};
+use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 
 static RULES: &str = "
 *** Royals ***
@@ -17,38 +17,48 @@ When the card is played an action might be performed based on the type of card i
 At the beginning a card is put to the side, that is hidden an not used except for the special case, when the last card played is a Prince.
 If all opponents are protected one may choose to not do anything.";
 
-#[derive(Debug, PartialEq, Copy, Clone, PartialOrd, EnumIter, EnumString, Display)]
+#[derive(Debug, PartialEq, Copy, Clone, PartialOrd, Display, EnumIter, EnumString, EnumMessage)]
 pub enum Card {
+    #[strum(
+        message = "If you play this card, you may choose an opponent and attempt to guess their card. If you guess right they drop out of the game. You may not guess the Guardian."
+    )]
     Guardian,
+    #[strum(message = "If you play this card, you may choose an opponent and see their card.")]
     Priest,
+    #[strum(
+        message = "If you play this card, you may compare your other card against the card of an opponent. The one with the lower card is drops out of the game. If they are equal no one drops out."
+    )]
     Baron,
+    #[strum(
+        message = "If you play this card, you are protected against all forms of attack for a single round. If the opponets forget and attempt to attack you, they drop out."
+    )]
     Maid,
+    #[strum(
+        message = "If you play this card, you may force an opponent to fold their card and fetch a new one from the deck."
+    )]
     Prince,
+    #[strum(
+        message = "If you play this card, you may choose an opponent and exchange you other card with theirs."
+    )]
     King,
+    #[strum(
+        message = "If you in addition to this card hold either Prince or King, you must play it instead of the King or Prince."
+    )]
     Contess,
+    #[strum(
+        message = "You must never play this card. If you are force to fold this card by any means (for example if you opponent plays the prince), you drop out."
+    )]
     Princess,
 }
 
 impl Card {
-    fn rule(&self) -> &str {
-        match self {
-            Card::Guardian =>
-                "Guardian [value = 1]: If you play this card, you may choose an opponent and attempt to guess their card. If you guess right they drop out of the game. You may not guess the Guardian.",
-            Card::Priest =>
-                "Priest [value = 2]: If you play this card, you may choose an opponent and see their card.",
-            Card::Baron =>
-                "Baron [value = 3]: If you play this card, you may compare your other card against the card of an opponent. The one with the lower card is drops out of the game. If they are equal no one drops out.",
-            Card::Maid =>
-                "Maid [value = 4]: If you play this card, you are protected against all forms of attack for a single round. If the opponets forget and attempt to attack you, they drop out.",
-            Card::Prince =>
-                "Prince [value = 5]: If you play this card, you may force an opponent to fold their card and fetch a new one from the deck.",
-            Card::King =>
-                "King [value = 6]: If you play this card, you may choose an opponent and exchange you other card with theirs.",
-            Card::Contess =>
-                "Contess [value = 7]: If you in addition to this card hold either Prince or King, you must play it instead of the King or Prince.",
-            Card::Princess =>
-                "Princess [value = 8]: You must never play this card. If you are force to fold this card by any means (for example if you opponent plays the prince), you drop out.",
-        }
+    fn rule(&self) -> String {
+        return format!(
+            "{} [value = {}]: {}",
+            self.to_string(),
+            *self as usize + 1,
+            self.get_message().unwrap_or("No rule")
+        );
     }
     fn rules() -> String {
         Card::iter()
