@@ -60,6 +60,7 @@ impl Card {
             self.get_message().unwrap_or("No rule")
         );
     }
+
     fn rules() -> String {
         Card::iter()
             .map(|c| c.rule().to_string())
@@ -67,15 +68,18 @@ impl Card {
             .join("\n")
             + "\n"
     }
+
     fn needs_guess(&self) -> bool {
         self == &Card::Guardian
     }
+
     fn needs_opponent(&self) -> bool {
         match self {
             Card::Guardian | Card::Priest | Card::Baron | Card::Prince | Card::King => true,
             _ => false,
         }
     }
+
     fn name(&self) -> String {
         self.to_string()
     }
