@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 use strum::IntoEnumIterator;
-use strum_macros::{EnumIter, EnumString};
+use strum_macros::{Display, EnumIter};
 
 static RULES: &str = "
 *** Royals ***
@@ -17,7 +17,7 @@ When the card is played an action might be performed based on the type of card i
 At the beginning a card is put to the side, that is hidden an not used except for the special case, when the last card played is a Prince.
 If all opponents are protected one may choose to not do anything.";
 
-#[derive(Debug, PartialEq, Copy, Clone, PartialOrd, EnumIter, EnumString)]
+#[derive(Debug, PartialEq, Copy, Clone, PartialOrd, EnumIter, Display)]
 pub enum Card {
     Guardian,
     Priest,
@@ -66,17 +66,8 @@ impl Card {
             _ => false,
         }
     }
-    fn name(&self) -> &str {
-        match self {
-            Card::Guardian => "Guardian",
-            Card::Priest => "Priest",
-            Card::Baron => "Baron",
-            Card::Maid => "Maid",
-            Card::Prince => "Prince",
-            Card::King => "King",
-            Card::Contess => "Contess",
-            Card::Princess => "Princess",
-        }
+    fn name(&self) -> String {
+        self.to_string()
     }
 }
 
@@ -365,8 +356,7 @@ impl Play {
         if let Some(g) = &self.guess {
             guess_str = "\n\tGuess: ".to_string() + &g.name().to_string();
         }
-        let st = "\n\t".to_string() + self.card.name();
-        st + &op_str + &guess_str
+        format!("\n\t{}{}{}", self.card.name(), op_str, guess_str)
     }
 }
 impl FromStr for Play {
