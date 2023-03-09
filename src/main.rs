@@ -98,6 +98,7 @@ pub trait PlayerInterface {
 struct RandomPlayingComputer {
     ind: usize,
 }
+
 impl PlayerInterface for RandomPlayingComputer {
     fn notify(&self, _game_log: &Vec<Event>, _players: &Vec<Player>) {}
     fn obtain_action(
