@@ -63,10 +63,9 @@ impl Card {
 
     fn rules() -> String {
         Card::iter()
-            .map(|c| c.rule().to_string())
+            .map(|c| c.rule())
             .collect::<Vec<_>>()
             .join("\n")
-            + "\n"
     }
 
     fn needs_guess(&self) -> bool {
@@ -78,10 +77,6 @@ impl Card {
             Card::Guardian | Card::Priest | Card::Baron | Card::Prince | Card::King => true,
             _ => false,
         }
-    }
-
-    fn name(&self) -> String {
-        self.to_string()
     }
 }
 
@@ -227,7 +222,7 @@ impl ConsolePlayer {
             Event::Fold(pl, c, reason) => println!(
                 "~ Fold: {} folded {}, because {}",
                 players[*pl].name,
-                c.name(),
+                c.to_string(),
                 reason
             ),
             Event::PickUp(pl, c, s) => {
@@ -235,7 +230,7 @@ impl ConsolePlayer {
                     println!(
                         "~ PickUp: {} picked up {} , {} cards remaining in deck",
                         players[*pl].name,
-                        card.name(),
+                        card.to_string(),
                         s
                     );
                 } else {
@@ -250,7 +245,7 @@ impl ConsolePlayer {
                     println!(
                         "~ LearnedCard: {} has card {}",
                         players[*pl].name,
-                        card.name()
+                        card.to_string()
                     );
                 } else {
                     println!("~ LearnedCard: {} has card ***", players[*pl].name);
@@ -371,9 +366,9 @@ impl Play {
             op_str = "\n\tOpponent: ".to_string() + &op.to_string();
         }
         if let Some(g) = &self.guess {
-            guess_str = "\n\tGuess: ".to_string() + &g.name().to_string();
+            guess_str = "\n\tGuess: ".to_string() + &g.to_string();
         }
-        format!("\n\t{}{}{}", self.card.name(), op_str, guess_str)
+        format!("\n\t{}{}{}", self.card.to_string(), op_str, guess_str)
     }
 }
 
@@ -425,7 +420,7 @@ impl ConsoleAction {
             ConsoleAction::Quit => "q".to_string(),
             ConsoleAction::Rules => "r".to_string(),
             ConsoleAction::CardEffects => "c".to_string(),
-            ConsoleAction::Card(c) => c.name().to_string(),
+            ConsoleAction::Card(c) => c.to_string(),
             ConsoleAction::Player(id) => "".to_string() + &id.to_string(),
         }
     }
