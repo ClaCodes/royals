@@ -81,12 +81,12 @@ impl Card {
 }
 
 pub trait PlayerInterface {
-    fn notify(&self, game_log: &Vec<Event>, players: &Vec<Player>);
+    fn notify(&self, game_log: &[Event], players: &[Player]);
     fn obtain_action(
         &self,
-        hand_cards: &Vec<Card>,
-        players: &Vec<Player>,
-        game_log: &Vec<Event>,
+        hand_cards: &[Card],
+        players: &[Player],
+        game_log: &[Event],
     ) -> Action;
 }
 
@@ -95,12 +95,12 @@ struct RandomPlayingComputer {
 }
 
 impl PlayerInterface for RandomPlayingComputer {
-    fn notify(&self, _game_log: &Vec<Event>, _players: &Vec<Player>) {}
+    fn notify(&self, _game_log: &[Event], _players: &[Player]) {}
     fn obtain_action(
         &self,
-        hand_cards: &Vec<Card>,
-        players: &Vec<Player>,
-        _game_log: &Vec<Event>,
+        hand_cards: &[Card],
+        players: &[Player],
+        _game_log: &[Event],
     ) -> Action {
         let mut hand = hand_cards.to_vec();
         hand.shuffle(&mut rand::thread_rng());
@@ -162,7 +162,7 @@ impl ConsolePlayer {
         &self,
         cmds: Vec<ConsoleAction>,
         prompt: &str,
-        players: &Vec<Player>,
+        players: &[Player],
     ) -> ConsoleAction {
         let mut op = None;
         print!("\n{}\n", prompt);
@@ -182,7 +182,7 @@ impl ConsolePlayer {
         }
         op.unwrap()
     }
-    fn prompt_card(&self, cards: &Vec<Card>, prompt: &str, players: &Vec<Player>) -> ConsoleAction {
+    fn prompt_card(&self, cards: &[Card], prompt: &str, players: &[Player]) -> ConsoleAction {
         let mut queries = vec![
             ConsoleAction::Quit,
             ConsoleAction::Rules,
@@ -193,7 +193,7 @@ impl ConsolePlayer {
         }
         self.query_user(queries, prompt, players)
     }
-    fn prompt_opponent(&self, players: &Vec<Player>) -> ConsoleAction {
+    fn prompt_opponent(&self, players: &[Player]) -> ConsoleAction {
         let mut queries = vec![
             ConsoleAction::Quit,
             ConsoleAction::Rules,
@@ -215,7 +215,7 @@ impl ConsolePlayer {
             players,
         )
     }
-    fn print_event(&self, event: &Event, players: &Vec<Player>) {
+    fn print_event(&self, event: &Event, players: &[Player]) {
         match &event {
             Event::Play(pl, p) => println!("~ PLay: {} played {}", players[*pl].name, p.info()),
             Event::DropOut(pl) => println!("~ DropOut: {}", players[*pl].name),
@@ -263,7 +263,7 @@ impl ConsolePlayer {
 }
 
 impl PlayerInterface for ConsolePlayer {
-    fn notify(&self, game_log: &Vec<Event>, players: &Vec<Player>) {
+    fn notify(&self, game_log: &[Event], players: &[Player]) {
         println!("================================================");
         for entry in game_log {
             self.print_event(entry, players);
@@ -271,9 +271,9 @@ impl PlayerInterface for ConsolePlayer {
     }
     fn obtain_action(
         &self,
-        hand_cards: &Vec<Card>,
-        players: &Vec<Player>,
-        game_log: &Vec<Event>,
+        hand_cards: &[Card],
+        players: &[Player],
+        game_log: &[Event],
     ) -> Action {
         let mut all_protected = true;
         for (ind, p) in players.iter().enumerate() {
@@ -400,7 +400,7 @@ enum ConsoleAction {
 pub struct ParseActionError;
 
 impl ConsoleAction {
-    fn info(&self, players: &Vec<Player>) -> String {
+    fn info(&self, players: &[Player]) -> String {
         match self {
             ConsoleAction::Quit => "quit".to_string(),
             ConsoleAction::Rules => "display rules".to_string(),
