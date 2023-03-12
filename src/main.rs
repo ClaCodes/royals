@@ -360,8 +360,8 @@ pub struct Play {
 
 impl Play {
     fn info(&self) -> String {
-        let op_str = self.opponent.map(|op| { "\n\tOpponent: ".to_string() + &op.to_string() });
-        let guess_str = self.guess.map(|g| { "\n\tGuess: ".to_string() + &g.to_string() });
+        let op_str = self.opponent.map(|op| { format!("\n\tOpponent: {op}") });
+        let guess_str = self.guess.map(|g| { format!("\n\tGuess: {g}") });
         format!("\n\t{}{}{}", self.card.to_string(), op_str.unwrap_or_default(), guess_str.unwrap_or_default())
     }
 }
