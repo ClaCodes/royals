@@ -360,15 +360,9 @@ pub struct Play {
 
 impl Play {
     fn info(&self) -> String {
-        let mut op_str = String::from("");
-        let mut guess_str = String::from("");
-        if let Some(op) = &self.opponent {
-            op_str = "\n\tOpponent: ".to_string() + &op.to_string();
-        }
-        if let Some(g) = &self.guess {
-            guess_str = "\n\tGuess: ".to_string() + &g.to_string();
-        }
-        format!("\n\t{}{}{}", self.card.to_string(), op_str, guess_str)
+        let op_str = self.opponent.map(|op| { "\n\tOpponent: ".to_string() + &op.to_string() });
+        let guess_str = self.guess.map(|g| { "\n\tGuess: ".to_string() + &g.to_string() });
+        format!("\n\t{}{}{}", self.card.to_string(), op_str.unwrap_or_default(), guess_str.unwrap_or_default())
     }
 }
 
