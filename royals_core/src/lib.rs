@@ -779,7 +779,7 @@ impl GameState {
     }
 }
 
-fn main() {
+pub fn run_game() {
     let mut game = GameState::new();
     game.run()
 }
