@@ -17,6 +17,8 @@ When the card is played an action might be performed based on the type of card i
 At the beginning a card is put to the side, that is hidden an not used except for the special case, when the last card played is a Prince.
 If all opponents are protected one may choose to not do anything.";
 
+type PlayerId = usize;
+
 #[derive(Debug, PartialEq, Copy, Clone, PartialOrd, Display, EnumIter, EnumString, EnumMessage)]
 pub enum Card {
     #[strum(
@@ -86,16 +88,11 @@ impl Card {
 
 pub trait PlayerInterface {
     fn notify(&self, game_log: &[Event], players: &[Player]);
-    fn obtain_action(
-        &self,
-        hand_cards: &[Card],
-        players: &[Player],
-        game_log: &[Event],
-    ) -> Action;
+    fn obtain_action(&self, hand_cards: &[Card], players: &[Player], game_log: &[Event]) -> Action;
 }
 
 struct RandomPlayingComputer {
-    ind: usize,
+    ind: PlayerId,
 }
 
 impl PlayerInterface for RandomPlayingComputer {
@@ -158,7 +155,7 @@ impl PlayerInterface for RandomPlayingComputer {
 }
 
 struct ConsolePlayer {
-    ind: usize,
+    ind: PlayerId,
 }
 
 impl ConsolePlayer {
@@ -273,12 +270,7 @@ impl PlayerInterface for ConsolePlayer {
             self.print_event(entry, players);
         }
     }
-    fn obtain_action(
-        &self,
-        hand_cards: &[Card],
-        players: &[Player],
-        game_log: &[Event],
-    ) -> Action {
+    fn obtain_action(&self, hand_cards: &[Card], players: &[Player], game_log: &[Event]) -> Action {
         let mut all_protected = true;
         for (ind, p) in players.iter().enumerate() {
             if !p.hand_cards.is_empty() && !p.protected && ind != self.ind {
@@ -358,15 +350,20 @@ pub struct ParsePlayError;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Play {
     card: Card,
-    opponent: Option<usize>,
+    opponent: Option<PlayerId>,
     guess: Option<Card>,
 }
 
 impl Play {
     fn info(&self) -> String {
-        let op_str = self.opponent.map(|op| { format!("\n\tOpponent: {op}") });
-        let guess_str = self.guess.map(|g| { format!("\n\tGuess: {g}") });
-        format!("\n\t{}{}{}", self.card.to_string(), op_str.unwrap_or_default(), guess_str.unwrap_or_default())
+        let op_str = self.opponent.map(|op| format!("\n\tOpponent: {op}"));
+        let guess_str = self.guess.map(|g| format!("\n\tGuess: {g}"));
+        format!(
+            "\n\t{}{}{}",
+            self.card.to_string(),
+            op_str.unwrap_or_default(),
+            guess_str.unwrap_or_default()
+        )
     }
 }
 
@@ -397,7 +394,7 @@ enum ConsoleAction {
     Rules,
     CardEffects,
     Card(Card),
-    Player(usize),
+    Player(PlayerId),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -448,18 +445,18 @@ impl FromStr for ConsoleAction {
 
 #[derive(Clone)]
 pub enum Event {
-    Play(usize, Play),
-    Fold(usize, Card, String),
-    PickUp(usize, Option<Card>, usize),
-    DropOut(usize),
-    LearnedCard(usize, Option<Card>),
-    Winner(Vec<usize>),
+    Play(PlayerId, Play),
+    Fold(PlayerId, Card, String),
+    PickUp(PlayerId, Option<Card>, usize),
+    DropOut(PlayerId),
+    LearnedCard(PlayerId, Option<Card>),
+    Winner(Vec<PlayerId>),
 }
 
 #[derive(PartialEq)]
 enum EventVisibility {
     Public,
-    Private(usize),
+    Private(PlayerId),
 }
 
 pub struct EventEntry {
@@ -489,7 +486,7 @@ struct GameState {
     deck: Vec<Card>,
     players: Vec<Player>,
     game_log: Vec<EventEntry>,
-    players_turn: usize,
+    players_turn: PlayerId,
     running: bool,
 }
 
@@ -574,7 +571,7 @@ impl GameState {
         for mut p in &mut self.game_log {
             p.visibility = EventVisibility::Public;
         }
-        let mut best_players: Vec<usize> = vec![];
+        let mut best_players: Vec<PlayerId> = vec![];
         let mut best_card: Option<Card> = None;
         for (i, p) in self.players.iter().enumerate() {
             if let Some(player_card) = p.hand_cards.get(0) {
@@ -623,23 +620,23 @@ impl GameState {
         }
         events
     }
-    fn pick_up_card(&mut self, p: usize) {
+    fn pick_up_card(&mut self, player_id: PlayerId) {
         let next_card = self.deck.pop().unwrap();
         self.game_log.push(EventEntry {
-            visibility: EventVisibility::Private(p),
-            event: Event::PickUp(p, Some(next_card.clone()), self.deck.len()),
+            visibility: EventVisibility::Private(player_id),
+            event: Event::PickUp(player_id, Some(next_card.clone()), self.deck.len()),
         });
-        self.players[p].hand_cards.push(next_card);
+        self.players[player_id].hand_cards.push(next_card);
     }
-    fn drop_player(&mut self, p: usize, reason: String) {
-        let op_card = self.players[p].hand_cards.pop().unwrap();
+    fn drop_player(&mut self, player_id: PlayerId, reason: String) {
+        let op_card = self.players[player_id].hand_cards.pop().unwrap();
         self.game_log.push(EventEntry {
             visibility: EventVisibility::Public,
-            event: Event::Fold(p, op_card, reason),
+            event: Event::Fold(player_id, op_card, reason),
         });
         self.game_log.push(EventEntry {
             visibility: EventVisibility::Public,
-            event: Event::DropOut(p),
+            event: Event::DropOut(player_id),
         });
     }
     fn active_player_count(&mut self) -> i32 {
