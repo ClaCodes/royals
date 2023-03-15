@@ -52,11 +52,15 @@ pub enum Card {
 }
 
 impl Card {
+    fn value(&self) -> u8 {
+        *self as u8 + 1
+    }
+
     fn rule(&self) -> String {
         return format!(
             "{} [value = {}]: {}",
             self.to_string(),
-            *self as usize + 1,
+            self.value(),
             self.get_message().unwrap_or("No rule")
         );
     }
