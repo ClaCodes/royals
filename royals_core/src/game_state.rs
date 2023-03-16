@@ -1,11 +1,10 @@
 use rand::seq::SliceRandom;
 
 use crate::{
-    action::Action,
     card::Card,
     console_player::ConsolePlayer,
     event::{Event, EventEntry, EventVisibility},
-    play::Play,
+    play::{Action, Play},
     player::{Player, PlayerId},
     random_playing_computer::RandomPlayingComputer,
 };

@@ -1,10 +1,9 @@
 use rand::seq::SliceRandom;
 
 use crate::{
-    action::Action,
     card::Card,
     event::Event,
-    play::Play,
+    play::{Action, Play},
     player::{Player, PlayerId, PlayerInterface},
 };
 

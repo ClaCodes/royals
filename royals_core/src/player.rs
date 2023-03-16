@@ -1,4 +1,4 @@
-use crate::{action::Action, card::Card, Event};
+use crate::{card::Card, play::Action, Event};
 
 pub type PlayerId = usize;
 

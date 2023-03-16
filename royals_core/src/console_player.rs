@@ -6,10 +6,9 @@ use std::{
 use itertools::Itertools;
 
 use crate::{
-    action::Action,
     card::Card,
     event::Event,
-    play::Play,
+    play::{Action, Play},
     player::{Player, PlayerId, PlayerInterface},
 };
 
