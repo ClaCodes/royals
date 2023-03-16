@@ -21,7 +21,6 @@ impl PlayerInterface for RandomPlayingComputer {
         _game_log: &[Event],
         all_protected: bool,
         _active_players: &[PlayerId],
-
     ) -> Action {
         let mut hand = hand_cards.to_vec();
         hand.shuffle(&mut rand::thread_rng());

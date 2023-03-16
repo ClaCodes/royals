@@ -5,7 +5,7 @@ use crate::{
     console_player::ConsolePlayer,
     event::{Event, EventEntry, EventVisibility},
     play::{Action, Play},
-    player::{PlayerInterface, PlayerId},
+    player::{PlayerId, PlayerInterface},
     random_playing_computer::RandomPlayingComputer,
 };
 
@@ -15,12 +15,9 @@ struct Player {
 
 impl Player {
     pub fn new(interface: Box<dyn PlayerInterface>) -> Self {
-        Self {
-            interface,
-        }
+        Self { interface }
     }
 }
-
 
 pub struct GameState {
     deck: Vec<Card>,
@@ -38,18 +35,24 @@ impl GameState {
         let mut players = vec![];
         let mut player_names = vec![];
 
-        player_names.push( "You");
-        player_names.push( "Computer Alpha");
-        player_names.push( "Computer Bravo");
-        player_names.push( "Computer Charlie");
+        player_names.push("You");
+        player_names.push("Computer Alpha");
+        player_names.push("Computer Bravo");
+        player_names.push("Computer Charlie");
         let player_names = player_names.iter().map(|x| x.to_string()).collect();
-        players.push(Player::new( Box::new(ConsolePlayer { id: players.len() }),));
-        players.push(Player::new( Box::new(RandomPlayingComputer { id: players.len() }),));
-        players.push(Player::new( Box::new(RandomPlayingComputer { id: players.len() }),));
-        players.push(Player::new( Box::new(RandomPlayingComputer { id: players.len() }),));
+        players.push(Player::new(Box::new(ConsolePlayer { id: players.len() })));
+        players.push(Player::new(Box::new(RandomPlayingComputer {
+            id: players.len(),
+        })));
+        players.push(Player::new(Box::new(RandomPlayingComputer {
+            id: players.len(),
+        })));
+        players.push(Player::new(Box::new(RandomPlayingComputer {
+            id: players.len(),
+        })));
         //state.players.shuffle(&mut rand::thread_rng()); todo
         let player_protected = vec![false, false, false, false];
-        let hand_cards:Vec<Vec<Card>> = vec![vec![], vec![], vec![], vec![]];
+        let hand_cards: Vec<Vec<Card>> = vec![vec![], vec![], vec![], vec![]];
 
         let mut state = GameState {
             deck: vec![
@@ -99,7 +102,7 @@ impl GameState {
                 &self.player_names,
                 &self.filter_event(),
                 self.all_protected(),
-                &self.active_players()
+                &self.active_players(),
             );
 
             match user_action {
@@ -194,7 +197,8 @@ impl GameState {
 
     fn active_players(&self) -> Vec<PlayerId> {
         self.hand_cards
-            .iter().enumerate()
+            .iter()
+            .enumerate()
             .filter(|(_, hc)| !hc.is_empty())
             .map(|(i, _)| i)
             .collect()
@@ -213,8 +217,7 @@ impl GameState {
         if play.card == Card::Princess {
             return false;
         }
-        if self.hand_cards[self.players_turn].contains(&Card::Contess)
-        {
+        if self.hand_cards[self.players_turn].contains(&Card::Contess) {
             if play.card == Card::Prince || play.card == Card::King {
                 return false;
             }
@@ -236,10 +239,9 @@ impl GameState {
     }
 
     fn all_protected(&self) -> bool {
-        self.players
-            .iter()
-            .enumerate()
-            .all(|(i, _)| self.hand_cards[i].is_empty() || self.player_protected[i] || i == self.players_turn)
+        self.players.iter().enumerate().all(|(i, _)| {
+            self.hand_cards[i].is_empty() || self.player_protected[i] || i == self.players_turn
+        })
     }
 
     fn handle_play(&mut self, p: Play) {

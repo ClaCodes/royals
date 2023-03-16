@@ -4,5 +4,12 @@ pub type PlayerId = usize;
 
 pub trait PlayerInterface {
     fn notify(&self, game_log: &[Event], players: &[String]);
-    fn obtain_action(&self, hand_cards: &[Card], players: &[String], game_log: &[Event], all_protected:bool, active_players: &[PlayerId]) -> Action;
+    fn obtain_action(
+        &self,
+        hand_cards: &[Card],
+        players: &[String],
+        game_log: &[Event],
+        all_protected: bool,
+        active_players: &[PlayerId],
+    ) -> Action;
 }
