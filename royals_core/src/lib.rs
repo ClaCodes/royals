@@ -92,7 +92,7 @@ pub trait PlayerInterface {
 }
 
 struct RandomPlayingComputer {
-    ind: PlayerId,
+    id: PlayerId,
 }
 
 impl PlayerInterface for RandomPlayingComputer {
@@ -107,7 +107,7 @@ impl PlayerInterface for RandomPlayingComputer {
         hand.shuffle(&mut rand::thread_rng());
         let mut all_protected = true;
         for (ind, p) in players.iter().enumerate() {
-            if !p.hand_cards.is_empty() && !p.protected && ind != self.ind {
+            if !p.hand_cards.is_empty() && !p.protected && ind != self.id {
                 all_protected = false;
             }
         }
@@ -155,7 +155,7 @@ impl PlayerInterface for RandomPlayingComputer {
 }
 
 struct ConsolePlayer {
-    ind: PlayerId,
+    id: PlayerId,
 }
 
 impl ConsolePlayer {
@@ -202,7 +202,7 @@ impl ConsolePlayer {
         ];
         let mut pl_ids = vec![];
         for (i, op) in players.iter().enumerate() {
-            if !op.hand_cards.is_empty() && i != self.ind {
+            if !op.hand_cards.is_empty() && i != self.id {
                 queries.push(ConsoleAction::Player(i));
                 pl_ids.push(i);
             }
@@ -273,7 +273,7 @@ impl PlayerInterface for ConsolePlayer {
     fn obtain_action(&self, hand_cards: &[Card], players: &[Player], game_log: &[Event]) -> Action {
         let mut all_protected = true;
         for (ind, p) in players.iter().enumerate() {
-            if !p.hand_cards.is_empty() && !p.protected && ind != self.ind {
+            if !p.hand_cards.is_empty() && !p.protected && ind != self.id {
                 all_protected = false;
             }
         }
@@ -492,6 +492,25 @@ struct GameState {
 
 impl GameState {
     fn new() -> Self {
+        let mut players = vec![];
+
+        players.push(Player::new(
+            "You".to_string(),
+            Box::new(ConsolePlayer { id: players.len() }),
+        ));
+        players.push(Player::new(
+            "Computer Alpha".to_string(),
+            Box::new(RandomPlayingComputer { id: players.len() }),
+        ));
+        players.push(Player::new(
+            "Computer Bravo".to_string(),
+            Box::new(RandomPlayingComputer { id: players.len() }),
+        ));
+        players.push(Player::new(
+            "Computer Charlie".to_string(),
+            Box::new(RandomPlayingComputer { id: players.len() }),
+        ));
+
         let mut state = GameState {
             deck: vec![
                 Card::Guardian,
@@ -511,21 +530,7 @@ impl GameState {
                 Card::Contess,
                 Card::Princess,
             ],
-            players: vec![
-                Player::new("You".to_string(), Box::new(ConsolePlayer { ind: 0 })),
-                Player::new(
-                    "Computer Alpha".to_string(),
-                    Box::new(RandomPlayingComputer { ind: 1 }),
-                ),
-                Player::new(
-                    "Computer Bravo".to_string(),
-                    Box::new(RandomPlayingComputer { ind: 2 }),
-                ),
-                Player::new(
-                    "Computer Charlie".to_string(),
-                    Box::new(RandomPlayingComputer { ind: 3 }),
-                ),
-            ],
+            players,
             game_log: vec![],
             players_turn: 0,
             running: true,
@@ -533,10 +538,10 @@ impl GameState {
 
         state.deck.shuffle(&mut rand::thread_rng());
         //state.players.shuffle(&mut rand::thread_rng()); todo
-        state.pick_up_card(0);
-        state.pick_up_card(1);
-        state.pick_up_card(2);
-        state.pick_up_card(3);
+
+        for i in 0..state.players.len() {
+            state.pick_up_card(i);
+        }
 
         state
     }
@@ -697,7 +702,7 @@ impl GameState {
             visibility: EventVisibility::Public,
             event: Event::Play(self.players_turn, p.clone()),
         });
-        if let Some(opponent) = &p.opponent {
+        if let Some(opponent) = p.opponent {
             let mut all_protected = true;
             for (ind, p) in self.players.iter().enumerate() {
                 if !p.hand_cards.is_empty() && !p.protected && ind != self.players_turn {
@@ -705,7 +710,7 @@ impl GameState {
                 }
             }
             // do not attack protected player
-            if self.players[*opponent].protected && !all_protected {
+            if self.players[opponent].protected && !all_protected {
                 self.drop_player(self.players_turn, "attacked a protected player".to_string());
                 return;
             }
