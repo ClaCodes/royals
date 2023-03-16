@@ -154,7 +154,7 @@ impl PlayerInterface for ConsolePlayer {
             let action =
                 self.prompt_card(&hand_cards, "Choose the card you want to play:", &players);
             match action {
-                ConsoleAction::Quit => return Action::Quit,
+                ConsoleAction::Quit => return Action::GiveUp,
                 ConsoleAction::Rules => println!("{}", RULES),
                 ConsoleAction::CardEffects => println!("{}", Card::rules()),
                 ConsoleAction::Card(c) => card = Some(c),
@@ -171,7 +171,7 @@ impl PlayerInterface for ConsolePlayer {
             while opponent.is_none() {
                 let action = self.prompt_opponent(&players);
                 match action {
-                    ConsoleAction::Quit => return Action::Quit,
+                    ConsoleAction::Quit => return Action::GiveUp,
                     ConsoleAction::Rules => println!("{}", RULES),
                     ConsoleAction::CardEffects => println!("{}", Card::rules()),
                     ConsoleAction::Player(c) => opponent = Some(c),
@@ -197,7 +197,7 @@ impl PlayerInterface for ConsolePlayer {
                     &players,
                 );
                 match action {
-                    ConsoleAction::Quit => return Action::Quit,
+                    ConsoleAction::Quit => return Action::GiveUp,
                     ConsoleAction::Rules => println!("{}", RULES),
                     ConsoleAction::CardEffects => println!("{}", Card::rules()),
                     ConsoleAction::Card(c) => guess = Some(c),

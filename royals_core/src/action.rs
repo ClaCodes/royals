@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
-use crate::{card::Card, Play, PlayerId, player::Player};
+use crate::{card::Card, player::Player, Play, PlayerId};
 
 #[derive(Debug, PartialEq)]
 pub enum Action {
-    Quit,
+    GiveUp,
     Play(Play),
 }
 

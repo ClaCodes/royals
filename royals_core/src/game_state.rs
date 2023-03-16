@@ -3,9 +3,11 @@ use rand::seq::SliceRandom;
 use crate::{
     action::Action,
     card::Card,
+    console_player::ConsolePlayer,
     event::{Event, EventEntry, EventVisibility},
     play::Play,
-    player::{ Player, PlayerId}, random_playing_computer::RandomPlayingComputer, console_player::ConsolePlayer,
+    player::{Player, PlayerId},
+    random_playing_computer::RandomPlayingComputer,
 };
 
 pub struct GameState {
@@ -86,15 +88,15 @@ impl GameState {
             );
 
             match user_action {
-                Action::Quit => self.running = false,
+                Action::GiveUp => {
+                    self.drop_player(self.players_turn, "Player gave up".to_string());
+                    self.next_player_turn();
+                }
                 Action::Play(p) => {
                     ok = self.is_valid(&p);
                     if ok {
                         self.handle_play(p);
                         self.next_player_turn();
-                        // last card is ussually not used
-                        self.running =
-                            self.running && self.deck.len() > 1 && self.active_player_count() > 1;
                     }
                 }
             }
@@ -163,11 +165,12 @@ impl GameState {
     }
 
     fn drop_player(&mut self, player_id: PlayerId, reason: String) {
-        let op_card = self.players[player_id].hand_cards.pop().unwrap();
-        self.game_log.push(EventEntry {
-            visibility: EventVisibility::Public,
-            event: Event::Fold(player_id, op_card, reason),
-        });
+        while let Some(op_card) = self.players[player_id].hand_cards.pop() {
+            self.game_log.push(EventEntry {
+                visibility: EventVisibility::Public,
+                event: Event::Fold(player_id, op_card, reason.clone()),
+            });
+        }
         self.game_log.push(EventEntry {
             visibility: EventVisibility::Public,
             event: Event::DropOut(player_id),
@@ -186,6 +189,8 @@ impl GameState {
         while self.players[self.players_turn].hand_cards.len() == 0 {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
+        // last card is ussually not used
+        self.running = self.running && self.deck.len() > 1 && self.active_player_count() > 1;
     }
 
     fn is_valid(&self, play: &Play) -> bool {
