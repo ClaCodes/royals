@@ -5,13 +5,31 @@ use crate::{
     console_player::ConsolePlayer,
     event::{Event, EventEntry, EventVisibility},
     play::{Action, Play},
-    player::{Player, PlayerId},
+    player::{PlayerInterface, PlayerId},
     random_playing_computer::RandomPlayingComputer,
 };
+
+struct Player {
+    pub interface: Box<dyn PlayerInterface>,
+    pub hand_cards: Vec<Card>,
+    pub protected: bool,
+}
+
+impl Player {
+    pub fn new(interface: Box<dyn PlayerInterface>) -> Self {
+        Self {
+            interface,
+            hand_cards: vec![],
+            protected: false,
+        }
+    }
+}
+
 
 pub struct GameState {
     deck: Vec<Card>,
     players: Vec<Player>,
+    player_names: Vec<String>,
     game_log: Vec<EventEntry>,
     players_turn: PlayerId,
     running: bool,
@@ -20,23 +38,18 @@ pub struct GameState {
 impl GameState {
     pub fn new() -> Self {
         let mut players = vec![];
+        let mut player_names = vec![];
 
-        players.push(Player::new(
-            "You",
-            Box::new(ConsolePlayer { id: players.len() }),
-        ));
-        players.push(Player::new(
-            "Computer Alpha",
-            Box::new(RandomPlayingComputer { id: players.len() }),
-        ));
-        players.push(Player::new(
-            "Computer Bravo",
-            Box::new(RandomPlayingComputer { id: players.len() }),
-        ));
-        players.push(Player::new(
-            "Computer Charlie",
-            Box::new(RandomPlayingComputer { id: players.len() }),
-        ));
+        player_names.push( "You");
+        player_names.push( "Computer Alpha");
+        player_names.push( "Computer Bravo");
+        player_names.push( "Computer Charlie");
+        let player_names = player_names.iter().map(|x| x.to_string()).collect();
+        players.push(Player::new( Box::new(ConsolePlayer { id: players.len() }),));
+        players.push(Player::new( Box::new(RandomPlayingComputer { id: players.len() }),));
+        players.push(Player::new( Box::new(RandomPlayingComputer { id: players.len() }),));
+        players.push(Player::new( Box::new(RandomPlayingComputer { id: players.len() }),));
+        //state.players.shuffle(&mut rand::thread_rng()); todo
 
         let mut state = GameState {
             deck: vec![
@@ -59,12 +72,12 @@ impl GameState {
             ],
             players,
             game_log: vec![],
+            player_names,
             players_turn: 0,
             running: true,
         };
 
         state.deck.shuffle(&mut rand::thread_rng());
-        //state.players.shuffle(&mut rand::thread_rng()); todo
 
         for i in 0..state.players.len() {
             state.pick_up_card(i);
@@ -81,8 +94,10 @@ impl GameState {
             }
             let user_action = self.players[self.players_turn].interface.obtain_action(
                 &self.players[self.players_turn].hand_cards,
-                &self.players,
+                &self.player_names,
                 &self.filter_event(),
+                self.all_protected(),
+                &self.active_players()
             );
 
             match user_action {
@@ -128,7 +143,7 @@ impl GameState {
             event: Event::Winner(best_players),
         });
         for p in &self.players {
-            p.interface.notify(&self.filter_event(), &self.players);
+            p.interface.notify(&self.filter_event(), &self.player_names);
         }
     }
 
@@ -175,11 +190,12 @@ impl GameState {
         });
     }
 
-    fn active_player_count(&self) -> usize {
+    fn active_players(&self) -> Vec<PlayerId> {
         self.players
-            .iter()
-            .filter(|p| !p.hand_cards.is_empty())
-            .count()
+            .iter().enumerate()
+            .filter(|(_, p)| !p.hand_cards.is_empty())
+            .map(|(i, _)| i)
+            .collect()
     }
 
     fn next_player_turn(&mut self) {
@@ -188,7 +204,7 @@ impl GameState {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
         // last card is ussually not used
-        self.running = self.running && self.deck.len() > 1 && self.active_player_count() > 1;
+        self.running = self.running && self.deck.len() > 1 && self.active_players().len() > 1;
     }
 
     fn is_valid(&self, play: &Play) -> bool {

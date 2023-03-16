@@ -4,7 +4,7 @@ use crate::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{Player, PlayerId, PlayerInterface},
+    player::{PlayerId, PlayerInterface},
 };
 
 pub struct RandomPlayingComputer {
@@ -12,22 +12,19 @@ pub struct RandomPlayingComputer {
 }
 
 impl PlayerInterface for RandomPlayingComputer {
-    fn notify(&self, _game_log: &[Event], _players: &[Player]) {}
+    fn notify(&self, _game_log: &[Event], _players: &[String]) {}
 
     fn obtain_action(
         &self,
         hand_cards: &[Card],
-        players: &[Player],
+        players: &[String],
         _game_log: &[Event],
+        all_protected: bool,
+        _active_players: &[PlayerId],
+
     ) -> Action {
         let mut hand = hand_cards.to_vec();
         hand.shuffle(&mut rand::thread_rng());
-        let mut all_protected = true;
-        for (ind, p) in players.iter().enumerate() {
-            if !p.hand_cards.is_empty() && !p.protected && ind != self.id {
-                all_protected = false;
-            }
-        }
         let mut play = Play {
             card: hand[0],
             opponent: None,
@@ -51,7 +48,7 @@ impl PlayerInterface for RandomPlayingComputer {
         if let Action::Play(p) = &mut action {
             if p.card.needs_opponent() && !all_protected {
                 let chosen = players.choose(&mut rand::thread_rng()).unwrap();
-                let index = players.iter().position(|x| x.name == chosen.name).unwrap();
+                let index = players.iter().position(|x| x == chosen).unwrap();
                 p.opponent = Some(index);
             }
             if p.card.needs_guess() && !all_protected {
