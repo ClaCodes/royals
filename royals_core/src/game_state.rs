@@ -12,7 +12,6 @@ use crate::{
 struct Player {
     pub interface: Box<dyn PlayerInterface>,
     pub hand_cards: Vec<Card>,
-    pub protected: bool,
 }
 
 impl Player {
@@ -20,7 +19,6 @@ impl Player {
         Self {
             interface,
             hand_cards: vec![],
-            protected: false,
         }
     }
 }
@@ -30,6 +28,7 @@ pub struct GameState {
     deck: Vec<Card>,
     players: Vec<Player>,
     player_names: Vec<String>,
+    player_protected: Vec<bool>,
     game_log: Vec<EventEntry>,
     players_turn: PlayerId,
     running: bool,
@@ -50,6 +49,7 @@ impl GameState {
         players.push(Player::new( Box::new(RandomPlayingComputer { id: players.len() }),));
         players.push(Player::new( Box::new(RandomPlayingComputer { id: players.len() }),));
         //state.players.shuffle(&mut rand::thread_rng()); todo
+        let player_protected = vec![false, false, false, false];
 
         let mut state = GameState {
             deck: vec![
@@ -73,6 +73,7 @@ impl GameState {
             players,
             game_log: vec![],
             player_names,
+            player_protected,
             players_turn: 0,
             running: true,
         };
@@ -237,7 +238,7 @@ impl GameState {
         self.players
             .iter()
             .enumerate()
-            .all(|(i, p)| p.hand_cards.is_empty() || p.protected || i == self.players_turn)
+            .all(|(i, p)| p.hand_cards.is_empty() || self.player_protected[i] || i == self.players_turn)
     }
 
     fn handle_play(&mut self, p: Play) {
@@ -253,12 +254,12 @@ impl GameState {
         });
         if let Some(opponent) = p.opponent {
             // do not attack protected player
-            if self.players[opponent].protected && !self.all_protected() {
+            if self.player_protected[opponent] && !self.all_protected() {
                 self.drop_player(self.players_turn, "attacked a protected player".to_string());
                 return;
             }
         }
-        self.players[self.players_turn].protected = false;
+        self.player_protected[self.players_turn] = false;
         match p.card {
             Card::Guardian => {
                 if let Some(op) = p.opponent {
@@ -291,7 +292,7 @@ impl GameState {
                 }
             }
             Card::Maid => {
-                self.players[self.players_turn].protected = true;
+                self.player_protected[self.players_turn] = true;
             }
             Card::Prince => {
                 if let Some(op) = p.opponent {
