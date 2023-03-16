@@ -79,9 +79,8 @@ impl GameState {
             if ok {
                 self.pick_up_card(self.players_turn);
             }
-            let player_cards = &self.players[self.players_turn].hand_cards;
             let user_action = self.players[self.players_turn].interface.obtain_action(
-                &player_cards,
+                &self.players[self.players_turn].hand_cards,
                 &self.players,
                 &self.filter_event(),
             );
@@ -185,7 +184,7 @@ impl GameState {
 
     fn next_player_turn(&mut self) {
         self.players_turn = (self.players_turn + 1) % self.players.len();
-        while self.players[self.players_turn].hand_cards.len() == 0 {
+        while self.players[self.players_turn].hand_cards.is_empty() {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
         // last card is ussually not used
@@ -196,8 +195,7 @@ impl GameState {
         if play.card == Card::Princess {
             return false;
         }
-        if self.players[self.players_turn].hand_cards[0] == Card::Contess
-            || self.players[self.players_turn].hand_cards[1] == Card::Contess
+        if self.players[self.players_turn].hand_cards.contains(&Card::Contess)
         {
             if play.card == Card::Prince || play.card == Card::King {
                 return false;
@@ -308,7 +306,7 @@ impl GameState {
             Card::Contess => {}
             Card::Princess => self.drop_player(
                 self.players_turn,
-                "playing the princess is illegal".to_string(),
+                "playing the princess is equivalent to giving up".to_string(),
             ),
         }
     }

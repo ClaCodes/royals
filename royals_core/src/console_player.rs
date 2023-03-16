@@ -145,7 +145,7 @@ impl ConsolePlayer {
 
     fn print_event(&self, event: &Event, players: &[Player]) {
         match &event {
-            Event::Play(pl, p) => println!("~ PLay: {} played {}", players[*pl].name, p.info()),
+            Event::Play(pl, p) => println!("~ Play: {} played {}", players[*pl].name, p.info()),
             Event::DropOut(pl) => println!("~ DropOut: {}", players[*pl].name),
             Event::Fold(pl, c, reason) => println!(
                 "~ Fold: {} folded {}, because {}",
