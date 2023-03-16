@@ -11,14 +11,12 @@ use crate::{
 
 struct Player {
     pub interface: Box<dyn PlayerInterface>,
-    pub hand_cards: Vec<Card>,
 }
 
 impl Player {
     pub fn new(interface: Box<dyn PlayerInterface>) -> Self {
         Self {
             interface,
-            hand_cards: vec![],
         }
     }
 }
@@ -28,6 +26,7 @@ pub struct GameState {
     deck: Vec<Card>,
     players: Vec<Player>,
     player_names: Vec<String>,
+    hand_cards: Vec<Vec<Card>>,
     player_protected: Vec<bool>,
     game_log: Vec<EventEntry>,
     players_turn: PlayerId,
@@ -50,6 +49,7 @@ impl GameState {
         players.push(Player::new( Box::new(RandomPlayingComputer { id: players.len() }),));
         //state.players.shuffle(&mut rand::thread_rng()); todo
         let player_protected = vec![false, false, false, false];
+        let hand_cards:Vec<Vec<Card>> = vec![vec![], vec![], vec![], vec![]];
 
         let mut state = GameState {
             deck: vec![
@@ -73,6 +73,7 @@ impl GameState {
             players,
             game_log: vec![],
             player_names,
+            hand_cards,
             player_protected,
             players_turn: 0,
             running: true,
@@ -94,7 +95,7 @@ impl GameState {
                 self.pick_up_card(self.players_turn);
             }
             let user_action = self.players[self.players_turn].interface.obtain_action(
-                &self.players[self.players_turn].hand_cards,
+                &self.hand_cards[self.players_turn],
                 &self.player_names,
                 &self.filter_event(),
                 self.all_protected(),
@@ -120,8 +121,8 @@ impl GameState {
         }
         let mut best_players: Vec<PlayerId> = vec![];
         let mut best_card: Option<Card> = None;
-        for (i, p) in self.players.iter().enumerate() {
-            if let Some(player_card) = p.hand_cards.get(0) {
+        for (i, _) in self.players.iter().enumerate() {
+            if let Some(player_card) = self.hand_cards[i].get(0) {
                 self.game_log.push(EventEntry {
                     visibility: EventVisibility::Public,
                     event: Event::Fold(i, player_card.clone(), "game is finished".to_string()),
@@ -175,11 +176,11 @@ impl GameState {
             visibility: EventVisibility::Private(player_id),
             event: Event::PickUp(player_id, Some(next_card.clone()), self.deck.len()),
         });
-        self.players[player_id].hand_cards.push(next_card);
+        self.hand_cards[player_id].push(next_card);
     }
 
     fn drop_player(&mut self, player_id: PlayerId, reason: String) {
-        while let Some(op_card) = self.players[player_id].hand_cards.pop() {
+        while let Some(op_card) = self.hand_cards[player_id].pop() {
             self.game_log.push(EventEntry {
                 visibility: EventVisibility::Public,
                 event: Event::Fold(player_id, op_card, reason.clone()),
@@ -192,16 +193,16 @@ impl GameState {
     }
 
     fn active_players(&self) -> Vec<PlayerId> {
-        self.players
+        self.hand_cards
             .iter().enumerate()
-            .filter(|(_, p)| !p.hand_cards.is_empty())
+            .filter(|(_, hc)| !hc.is_empty())
             .map(|(i, _)| i)
             .collect()
     }
 
     fn next_player_turn(&mut self) {
         self.players_turn = (self.players_turn + 1) % self.players.len();
-        while self.players[self.players_turn].hand_cards.is_empty() {
+        while self.hand_cards[self.players_turn].is_empty() {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
         // last card is ussually not used
@@ -212,7 +213,7 @@ impl GameState {
         if play.card == Card::Princess {
             return false;
         }
-        if self.players[self.players_turn].hand_cards.contains(&Card::Contess)
+        if self.hand_cards[self.players_turn].contains(&Card::Contess)
         {
             if play.card == Card::Prince || play.card == Card::King {
                 return false;
@@ -227,7 +228,7 @@ impl GameState {
             if op == self.players_turn {
                 return false;
             }
-            if self.players[op].hand_cards.is_empty() {
+            if self.hand_cards[op].is_empty() {
                 return false;
             }
         }
@@ -238,16 +239,15 @@ impl GameState {
         self.players
             .iter()
             .enumerate()
-            .all(|(i, p)| p.hand_cards.is_empty() || self.player_protected[i] || i == self.players_turn)
+            .all(|(i, _)| self.hand_cards[i].is_empty() || self.player_protected[i] || i == self.players_turn)
     }
 
     fn handle_play(&mut self, p: Play) {
-        let index = self.players[self.players_turn]
-            .hand_cards
+        let index = self.hand_cards[self.players_turn]
             .iter()
             .position(|x| *x == p.card)
             .unwrap();
-        self.players[self.players_turn].hand_cards.remove(index);
+        self.hand_cards[self.players_turn].remove(index);
         self.game_log.push(EventEntry {
             visibility: EventVisibility::Public,
             event: Event::Play(self.players_turn, p.clone()),
@@ -264,7 +264,7 @@ impl GameState {
             Card::Guardian => {
                 if let Some(op) = p.opponent {
                     let g = p.guess.unwrap();
-                    if self.players[op].hand_cards[0] == g {
+                    if self.hand_cards[op][0] == g {
                         self.drop_player(op, "opponent guess the hand card".to_string())
                     }
                 }
@@ -273,14 +273,14 @@ impl GameState {
                 if let Some(op) = p.opponent {
                     self.game_log.push(EventEntry {
                         visibility: EventVisibility::Private(self.players_turn),
-                        event: Event::LearnedCard(op, Some(self.players[op].hand_cards[0].clone())),
+                        event: Event::LearnedCard(op, Some(self.hand_cards[op][0].clone())),
                     });
                 }
             }
             Card::Baron => {
                 if let Some(op) = p.opponent {
-                    let op_card = self.players[op].hand_cards[0];
-                    let player_card = self.players[self.players_turn].hand_cards[0];
+                    let op_card = self.hand_cards[op][0];
+                    let player_card = self.hand_cards[self.players_turn][0];
                     if op_card < player_card {
                         self.drop_player(op, "smaller card then opponent".to_string());
                     } else if player_card < op_card {
@@ -296,10 +296,10 @@ impl GameState {
             }
             Card::Prince => {
                 if let Some(op) = p.opponent {
-                    if self.players[op].hand_cards[0] == Card::Princess {
+                    if self.hand_cards[op][0] == Card::Princess {
                         self.drop_player(op, "forced to play the princess".to_string());
                     } else {
-                        let folded = self.players[op].hand_cards.pop().unwrap();
+                        let folded = self.hand_cards[op].pop().unwrap();
                         self.game_log.push(EventEntry {
                             visibility: EventVisibility::Public,
                             event: Event::Fold(
@@ -314,10 +314,10 @@ impl GameState {
             }
             Card::King => {
                 if let Some(op) = p.opponent {
-                    let op_card = self.players[op].hand_cards.pop().unwrap();
-                    let player_card = self.players[self.players_turn].hand_cards.pop().unwrap();
-                    self.players[op].hand_cards.push(player_card);
-                    self.players[self.players_turn].hand_cards.push(op_card);
+                    let op_card = self.hand_cards[op].pop().unwrap();
+                    let player_card = self.hand_cards[self.players_turn].pop().unwrap();
+                    self.hand_cards[op].push(player_card);
+                    self.hand_cards[self.players_turn].push(op_card);
                 }
             }
             Card::Contess => {}
