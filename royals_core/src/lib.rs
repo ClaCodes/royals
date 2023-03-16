@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use rand::seq::SliceRandom; //can we do with std rust only
 use std::{
     fmt::Debug,
@@ -68,10 +69,7 @@ impl Card {
     }
 
     fn rules() -> String {
-        Card::iter()
-            .map(|c| c.rule())
-            .collect::<Vec<_>>()
-            .join("\n")
+        Card::iter().map(|c| c.rule()).join("\n")
     }
 
     fn needs_guess(&self) -> bool {
@@ -253,11 +251,8 @@ impl ConsolePlayer {
                 }
             }
             Event::Winner(pl) => {
-                let mut banner = "Winner is ".to_string();
-                for p in pl {
-                    banner = banner + &players[*p].name + ", ";
-                }
-                println!("{}", banner);
+                let banner = pl.iter().map(|&p| players[p].name.clone()).join(", ");
+                println!("Winner is {}", banner);
             }
         }
     }
@@ -472,9 +467,9 @@ pub struct Player {
 }
 
 impl Player {
-    fn new(name: String, interface: Box<dyn PlayerInterface>) -> Self {
+    fn new(name: &str, interface: Box<dyn PlayerInterface>) -> Self {
         Self {
-            name,
+            name: name.to_string(),
             interface,
             hand_cards: vec![],
             protected: false,
@@ -495,19 +490,19 @@ impl GameState {
         let mut players = vec![];
 
         players.push(Player::new(
-            "You".to_string(),
+            "You",
             Box::new(ConsolePlayer { id: players.len() }),
         ));
         players.push(Player::new(
-            "Computer Alpha".to_string(),
+            "Computer Alpha",
             Box::new(RandomPlayingComputer { id: players.len() }),
         ));
         players.push(Player::new(
-            "Computer Bravo".to_string(),
+            "Computer Bravo",
             Box::new(RandomPlayingComputer { id: players.len() }),
         ));
         players.push(Player::new(
-            "Computer Charlie".to_string(),
+            "Computer Charlie",
             Box::new(RandomPlayingComputer { id: players.len() }),
         ));
 
@@ -644,14 +639,11 @@ impl GameState {
             event: Event::DropOut(player_id),
         });
     }
-    fn active_player_count(&mut self) -> i32 {
-        let mut count: i32 = 0;
-        for p in &self.players {
-            if !p.hand_cards.is_empty() {
-                count += 1;
-            }
-        }
-        count
+    fn active_player_count(&self) -> usize {
+        self.players
+            .iter()
+            .filter(|p| !p.hand_cards.is_empty())
+            .count()
     }
     fn next_player_turn(&mut self) {
         self.players_turn = (self.players_turn + 1) % self.players.len();
@@ -659,13 +651,8 @@ impl GameState {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
     }
+
     fn is_valid(&self, play: &Play) -> bool {
-        let mut all_protected = true;
-        for (ind, p) in self.players.iter().enumerate() {
-            if !p.hand_cards.is_empty() && !p.protected && ind != self.players_turn {
-                all_protected = false;
-            }
-        }
         if play.card == Card::Princess {
             return false;
         }
@@ -677,7 +664,7 @@ impl GameState {
             }
         }
         if play.opponent.is_none() && play.card.needs_opponent() {
-            if !all_protected {
+            if !self.all_protected() {
                 return false;
             }
         }
@@ -691,6 +678,14 @@ impl GameState {
         }
         true
     }
+
+    fn all_protected(&self) -> bool {
+        self.players
+            .iter()
+            .enumerate()
+            .all(|(i, p)| p.hand_cards.is_empty() || p.protected || i == self.players_turn)
+    }
+
     fn handle_play(&mut self, p: Play) {
         let index = self.players[self.players_turn]
             .hand_cards
@@ -703,14 +698,8 @@ impl GameState {
             event: Event::Play(self.players_turn, p.clone()),
         });
         if let Some(opponent) = p.opponent {
-            let mut all_protected = true;
-            for (ind, p) in self.players.iter().enumerate() {
-                if !p.hand_cards.is_empty() && !p.protected && ind != self.players_turn {
-                    all_protected = false;
-                }
-            }
             // do not attack protected player
-            if self.players[opponent].protected && !all_protected {
+            if self.players[opponent].protected && !self.all_protected() {
                 self.drop_player(self.players_turn, "attacked a protected player".to_string());
                 return;
             }
