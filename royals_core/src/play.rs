@@ -39,3 +39,9 @@ impl FromStr for Play {
         }
     }
 }
+
+#[derive(Debug, PartialEq)]
+pub enum Action {
+    GiveUp,
+    Play(Play),
+}

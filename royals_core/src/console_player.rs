@@ -6,11 +6,10 @@ use std::{
 use itertools::Itertools;
 
 use crate::{
-    action::{Action, ConsoleAction},
     card::Card,
     event::Event,
-    play::Play,
-    player::{Player, PlayerId, PlayerInterface},
+    play::{Action, Play},
+    player::{PlayerId, PlayerInterface},
 };
 
 static RULES: &str = "
@@ -23,16 +22,72 @@ When the card is played an action might be performed based on the type of card i
 At the beginning a card is put to the side, that is hidden an not used except for the special case, when the last card played is a Prince.
 If all opponents are protected one may choose to not do anything.";
 
+#[derive(Debug, PartialEq)]
+enum ConsoleAction {
+    Quit,
+    Rules,
+    CardEffects,
+    Card(Card),
+    Player(PlayerId),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct ParseActionError;
+
+impl ConsoleAction {
+    fn info(&self, players: &[String]) -> String {
+        match self {
+            ConsoleAction::Quit => "quit".to_string(),
+            ConsoleAction::Rules => "display rules".to_string(),
+            ConsoleAction::CardEffects => "display card effects".to_string(),
+            ConsoleAction::Card(c) => c.rule().to_string(),
+            ConsoleAction::Player(id) => players[*id].clone(),
+        }
+    }
+
+    fn cmd_str(&self) -> String {
+        match self {
+            ConsoleAction::Quit => "q".to_string(),
+            ConsoleAction::Rules => "r".to_string(),
+            ConsoleAction::CardEffects => "c".to_string(),
+            ConsoleAction::Card(c) => c.to_string(),
+            ConsoleAction::Player(id) => id.to_string(),
+        }
+    }
+}
+
+impl FromStr for ConsoleAction {
+    type Err = ParseActionError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "q" => Ok(ConsoleAction::Quit),
+            "r" => Ok(ConsoleAction::Rules),
+            "c" => Ok(ConsoleAction::CardEffects),
+            _ => {
+                if let Ok(p) = Card::from_str(s) {
+                    Ok(ConsoleAction::Card(p))
+                } else {
+                    if let Ok(p) = usize::from_str(s) {
+                        Ok(ConsoleAction::Player(p))
+                    } else {
+                        Err(ParseActionError)
+                    }
+                }
+            }
+        }
+    }
+}
+
 pub struct ConsolePlayer {
     pub id: PlayerId,
 }
 
 impl ConsolePlayer {
-    pub fn query_user(
+    fn query_user(
         &self,
         cmds: Vec<ConsoleAction>,
         prompt: &str,
-        players: &[Player],
+        players: &[String],
     ) -> ConsoleAction {
         let mut op = None;
         print!("\n{}\n", prompt);
@@ -53,7 +108,7 @@ impl ConsolePlayer {
         op.unwrap()
     }
 
-    fn prompt_card(&self, cards: &[Card], prompt: &str, players: &[Player]) -> ConsoleAction {
+    fn prompt_card(&self, cards: &[Card], prompt: &str, players: &[String]) -> ConsoleAction {
         let mut queries = vec![
             ConsoleAction::Quit,
             ConsoleAction::Rules,
@@ -65,21 +120,21 @@ impl ConsolePlayer {
         self.query_user(queries, prompt, players)
     }
 
-    fn prompt_opponent(&self, players: &[Player]) -> ConsoleAction {
+    fn prompt_opponent(&self, players: &[String], active_players: &[PlayerId]) -> ConsoleAction {
         let mut queries = vec![
             ConsoleAction::Quit,
             ConsoleAction::Rules,
             ConsoleAction::CardEffects,
         ];
         let mut pl_ids = vec![];
-        for (i, op) in players.iter().enumerate() {
-            if !op.hand_cards.is_empty() && i != self.id {
-                queries.push(ConsoleAction::Player(i));
+        for i in active_players.iter() {
+            if *i != self.id {
+                queries.push(ConsoleAction::Player(*i));
                 pl_ids.push(i);
             }
         }
-        if queries.len() == 4 {
-            return ConsoleAction::Player(pl_ids[0]);
+        if pl_ids.len() == 1 {
+            return ConsoleAction::Player(*pl_ids.pop().unwrap());
         }
         self.query_user(
             queries,
@@ -88,13 +143,13 @@ impl ConsolePlayer {
         )
     }
 
-    fn print_event(&self, event: &Event, players: &[Player]) {
+    fn print_event(&self, event: &Event, players: &[String]) {
         match &event {
-            Event::Play(pl, p) => println!("~ PLay: {} played {}", players[*pl].name, p.info()),
-            Event::DropOut(pl) => println!("~ DropOut: {}", players[*pl].name),
+            Event::Play(pl, p) => println!("~ Play: {} played {}", players[*pl], p.info()),
+            Event::DropOut(pl) => println!("~ DropOut: {}", players[*pl]),
             Event::Fold(pl, c, reason) => println!(
                 "~ Fold: {} folded {}, because {}",
-                players[*pl].name,
+                players[*pl],
                 c.to_string(),
                 reason
             ),
@@ -102,14 +157,14 @@ impl ConsolePlayer {
                 if let Some(card) = c {
                     println!(
                         "~ PickUp: {} picked up {} , {} cards remaining in deck",
-                        players[*pl].name,
+                        players[*pl],
                         card.to_string(),
                         s
                     );
                 } else {
                     println!(
                         "~ PickUp: {} picked up *** , {} cards remaining in deck",
-                        players[*pl].name, s
+                        players[*pl], s
                     );
                 }
             }
@@ -117,15 +172,15 @@ impl ConsolePlayer {
                 if let Some(card) = c {
                     println!(
                         "~ LearnedCard: {} has card {}",
-                        players[*pl].name,
+                        players[*pl],
                         card.to_string()
                     );
                 } else {
-                    println!("~ LearnedCard: {} has card ***", players[*pl].name);
+                    println!("~ LearnedCard: {} has card ***", players[*pl]);
                 }
             }
             Event::Winner(pl) => {
-                let banner = pl.iter().map(|&p| players[p].name.clone()).join(", ");
+                let banner = pl.iter().map(|&p| players[p].clone()).join(", ");
                 println!("Winner is {}", banner);
             }
         }
@@ -133,20 +188,21 @@ impl ConsolePlayer {
 }
 
 impl PlayerInterface for ConsolePlayer {
-    fn notify(&self, game_log: &[Event], players: &[Player]) {
+    fn notify(&self, game_log: &[Event], players: &[String]) {
         println!("================================================");
         for entry in game_log {
             self.print_event(entry, players);
         }
     }
 
-    fn obtain_action(&self, hand_cards: &[Card], players: &[Player], game_log: &[Event]) -> Action {
-        let mut all_protected = true;
-        for (ind, p) in players.iter().enumerate() {
-            if !p.hand_cards.is_empty() && !p.protected && ind != self.id {
-                all_protected = false;
-            }
-        }
+    fn obtain_action(
+        &self,
+        hand_cards: &[Card],
+        players: &[String],
+        game_log: &[Event],
+        all_protected: bool,
+        active_players: &[PlayerId],
+    ) -> Action {
         self.notify(game_log, players);
 
         let mut card = None;
@@ -154,7 +210,7 @@ impl PlayerInterface for ConsolePlayer {
             let action =
                 self.prompt_card(&hand_cards, "Choose the card you want to play:", &players);
             match action {
-                ConsoleAction::Quit => return Action::Quit,
+                ConsoleAction::Quit => return Action::GiveUp,
                 ConsoleAction::Rules => println!("{}", RULES),
                 ConsoleAction::CardEffects => println!("{}", Card::rules()),
                 ConsoleAction::Card(c) => card = Some(c),
@@ -169,9 +225,9 @@ impl PlayerInterface for ConsolePlayer {
             }
 
             while opponent.is_none() {
-                let action = self.prompt_opponent(&players);
+                let action = self.prompt_opponent(&players, &active_players);
                 match action {
-                    ConsoleAction::Quit => return Action::Quit,
+                    ConsoleAction::Quit => return Action::GiveUp,
                     ConsoleAction::Rules => println!("{}", RULES),
                     ConsoleAction::CardEffects => println!("{}", Card::rules()),
                     ConsoleAction::Player(c) => opponent = Some(c),
@@ -197,7 +253,7 @@ impl PlayerInterface for ConsolePlayer {
                     &players,
                 );
                 match action {
-                    ConsoleAction::Quit => return Action::Quit,
+                    ConsoleAction::Quit => return Action::GiveUp,
                     ConsoleAction::Rules => println!("{}", RULES),
                     ConsoleAction::CardEffects => println!("{}", Card::rules()),
                     ConsoleAction::Card(c) => guess = Some(c),
