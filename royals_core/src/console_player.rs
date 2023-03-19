@@ -9,7 +9,7 @@ use crate::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{Player, PlayerId, PlayerData},
+    player::{Player, PlayerData, PlayerId},
 };
 
 static RULES: &str = "
@@ -35,7 +35,7 @@ enum ConsoleAction {
 struct ParseActionError;
 
 impl ConsoleAction {
-    fn info(&self, players: &[String]) -> String {
+    fn info(&self, players: &[&String]) -> String {
         match self {
             ConsoleAction::Quit => "quit".to_string(),
             ConsoleAction::Rules => "display rules".to_string(),
@@ -87,7 +87,7 @@ impl ConsolePlayer {
         &self,
         cmds: Vec<ConsoleAction>,
         prompt: &str,
-        players: &[String],
+        players: &[&String],
     ) -> ConsoleAction {
         let mut op = None;
         print!("\n{}\n", prompt);
@@ -108,7 +108,7 @@ impl ConsolePlayer {
         op.unwrap()
     }
 
-    fn prompt_card(&self, cards: &[Card], prompt: &str, players: &[String]) -> ConsoleAction {
+    fn prompt_card(&self, cards: &[Card], prompt: &str, players: &[&String]) -> ConsoleAction {
         let mut queries = vec![
             ConsoleAction::Quit,
             ConsoleAction::Rules,
@@ -120,7 +120,7 @@ impl ConsolePlayer {
         self.query_user(queries, prompt, players)
     }
 
-    fn prompt_opponent(&self, players: &[String], active_players: &[PlayerId]) -> ConsoleAction {
+    fn prompt_opponent(&self, players: &[&String], active_players: &[PlayerId]) -> ConsoleAction {
         let mut queries = vec![
             ConsoleAction::Quit,
             ConsoleAction::Rules,
@@ -143,9 +143,26 @@ impl ConsolePlayer {
         )
     }
 
-    fn print_event(&self, event: &Event, players: &[String]) {
+    pub fn format_play(&self, play: &Play, players: &[&String]) -> String {
+        let op_str = play
+            .opponent
+            .map(|op| format!("\n\tOpponent: {}", players[op]));
+        let guess_str = play.guess.map(|g| format!("\n\tGuess: {g}"));
+        format!(
+            "\n\t{}{}{}",
+            play.card.to_string(),
+            op_str.unwrap_or_default(),
+            guess_str.unwrap_or_default()
+        )
+    }
+
+    fn print_event(&self, event: &Event, players: &[&String]) {
         match &event {
-            Event::Play(pl, p) => println!("~ Play: {} played {}", players[*pl], p.info()),
+            Event::Play(pl, p) => println!(
+                "~ Play: {} played {}",
+                players[*pl],
+                self.format_play(p, players)
+            ),
             Event::DropOut(pl) => println!("~ DropOut: {}", players[*pl]),
             Event::Fold(pl, c, reason) => println!(
                 "~ Fold: {} folded {}, because {}",
@@ -189,7 +206,17 @@ impl ConsolePlayer {
 
 impl ConsolePlayer {
     pub fn new(data: PlayerData) -> ConsolePlayer {
-        ConsolePlayer { data }
+        let mut d = data;
+        print!("Please Enter Name: ");
+        io::stdout().flush().unwrap();
+        if let Some(line) = io::stdin().lock().lines().next() {
+            if let Ok(s) = line {
+                d.name = s;
+            } else {
+                d.name = "You".to_string();
+            }
+        };
+        ConsolePlayer { data: d }
     }
 }
 
@@ -202,7 +229,7 @@ impl Player for ConsolePlayer {
         &mut self.data
     }
 
-    fn notify(&self, game_log: &[Event], players: &[String]) {
+    fn notify(&self, game_log: &[Event], players: &[&String]) {
         println!("================================================");
         for entry in game_log {
             self.print_event(entry, players);
@@ -212,7 +239,7 @@ impl Player for ConsolePlayer {
     fn obtain_action(
         &self,
         hand: &[Card],
-        players: &[String],
+        players: &[&String],
         game_log: &[Event],
         all_protected: bool,
         active_players: &[PlayerId],
@@ -221,8 +248,7 @@ impl Player for ConsolePlayer {
 
         let mut card = None;
         while card.is_none() {
-            let action =
-                self.prompt_card(&hand, "Choose the card you want to play:", &players);
+            let action = self.prompt_card(&hand, "Choose the card you want to play:", &players);
             match action {
                 ConsoleAction::Quit => return Action::GiveUp,
                 ConsoleAction::Rules => println!("{}", RULES),

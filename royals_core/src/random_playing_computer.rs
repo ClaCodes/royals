@@ -7,12 +7,16 @@ use crate::{
     player::{Player, PlayerData, PlayerId},
 };
 
+static COMPUTER_NAMES: &[&str] = &["Computer Alpha", "Computer Bravo", "Computer Charlie"];
+
 pub struct RandomPlayingComputer {
     pub data: PlayerData,
 }
 
 impl RandomPlayingComputer {
     pub fn new(data: PlayerData) -> RandomPlayingComputer {
+        let mut data = data;
+        data.name = COMPUTER_NAMES[data.id % COMPUTER_NAMES.len()].to_string();
         RandomPlayingComputer { data }
     }
 }
@@ -26,12 +30,12 @@ impl Player for RandomPlayingComputer {
         &mut self.data
     }
 
-    fn notify(&self, _game_log: &[Event], _players: &[String]) {}
+    fn notify(&self, _game_log: &[Event], _players: &[&String]) {}
 
     fn obtain_action(
         &self,
         hand: &[Card],
-        players: &[String],
+        players: &[&String],
         _game_log: &[Event],
         all_protected: bool,
         _active_players: &[PlayerId],
