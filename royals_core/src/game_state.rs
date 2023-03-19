@@ -5,14 +5,13 @@ use crate::{
     console_player::ConsolePlayer,
     event::{Event, EventEntry, EventVisibility},
     play::{Action, Play},
-    player::{Player, PlayerId},
+    player::{Player, PlayerData, PlayerId},
     random_playing_computer::RandomPlayingComputer,
 };
 
 pub struct GameState {
     deck: Vec<Card>,
     players: Vec<Box<dyn Player>>,
-    player_names: Vec<String>,
     hand_cards: Vec<Vec<Card>>,
     player_protected: Vec<bool>,
     game_log: Vec<EventEntry>,
@@ -43,7 +42,6 @@ impl GameState {
             ],
             players: vec![],
             game_log: vec![],
-            player_names: vec![],
             hand_cards: vec![vec![], vec![], vec![], vec![]],
             player_protected: vec![false, false, false, false],
             players_turn: 0,
@@ -68,14 +66,43 @@ impl GameState {
 
     fn add_player<C, T>(&mut self, name: &str, player_constructor: C)
     where
-        C: Fn(PlayerId) -> T,
+        C: Fn(PlayerData) -> T,
         T: Player + 'static,
     {
-        let player = player_constructor(self.players.len());
-        self.player_names.push(name.to_string());
+        let player_data = PlayerData {
+            id: self.players.len(),
+            name: name.to_string(),
+            protected: false,
+            hand: vec![],
+        };
+        let player = player_constructor(player_data);
         self.players.push(Box::new(player));
     }
 
+    fn player_names(&self) -> Vec<String> {
+        self.players
+            .iter()
+            .map(|p| p.as_ref().get_data().name.clone())
+            .collect::<Vec<_>>()
+    }
+
+    fn active_players(&self) -> Vec<PlayerId> {
+        self.hand_cards
+            .iter()
+            .enumerate()
+            .filter(|(_, hc)| !hc.is_empty())
+            .map(|(i, _)| i)
+            .collect()
+    }
+
+    fn all_protected(&self) -> bool {
+        self.players.iter().enumerate().all(|(i, _)| {
+            self.hand_cards[i].is_empty() || self.player_protected[i] || i == self.players_turn
+        })
+    }
+}
+
+impl GameState {
     pub fn run(&mut self) {
         let mut ok = true;
         while self.running {
@@ -84,7 +111,7 @@ impl GameState {
             }
             let user_action = self.players[self.players_turn].obtain_action(
                 &self.hand_cards[self.players_turn],
-                &self.player_names,
+                &self.player_names(),
                 &self.filter_event(),
                 self.all_protected(),
                 &self.active_players(),
@@ -133,7 +160,7 @@ impl GameState {
             event: Event::Winner(best_players),
         });
         for p in &self.players {
-            p.notify(&self.filter_event(), &self.player_names);
+            p.notify(&self.filter_event(), &self.player_names());
         }
     }
 
@@ -180,15 +207,6 @@ impl GameState {
         });
     }
 
-    fn active_players(&self) -> Vec<PlayerId> {
-        self.hand_cards
-            .iter()
-            .enumerate()
-            .filter(|(_, hc)| !hc.is_empty())
-            .map(|(i, _)| i)
-            .collect()
-    }
-
     fn next_player_turn(&mut self) {
         self.players_turn = (self.players_turn + 1) % self.players.len();
         while self.hand_cards[self.players_turn].is_empty() {
@@ -221,12 +239,6 @@ impl GameState {
             }
         }
         true
-    }
-
-    fn all_protected(&self) -> bool {
-        self.players.iter().enumerate().all(|(i, _)| {
-            self.hand_cards[i].is_empty() || self.player_protected[i] || i == self.players_turn
-        })
     }
 
     fn handle_play(&mut self, p: Play) {

@@ -9,7 +9,7 @@ use crate::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{Player, PlayerId},
+    player::{Player, PlayerId, PlayerData},
 };
 
 static RULES: &str = "
@@ -79,7 +79,7 @@ impl FromStr for ConsoleAction {
 }
 
 pub struct ConsolePlayer {
-    pub id: PlayerId,
+    pub data: PlayerData,
 }
 
 impl ConsolePlayer {
@@ -128,7 +128,7 @@ impl ConsolePlayer {
         ];
         let mut pl_ids = vec![];
         for i in active_players.iter() {
-            if *i != self.id {
+            if *i != self.data.id {
                 queries.push(ConsoleAction::Player(*i));
                 pl_ids.push(i);
             }
@@ -188,12 +188,16 @@ impl ConsolePlayer {
 }
 
 impl ConsolePlayer {
-    pub fn new(id: PlayerId) -> ConsolePlayer {
-        ConsolePlayer { id }
+    pub fn new(data: PlayerData) -> ConsolePlayer {
+        ConsolePlayer { data }
     }
 }
 
 impl Player for ConsolePlayer {
+    fn get_data(&self) -> &PlayerData {
+        &self.data
+    }
+
     fn notify(&self, game_log: &[Event], players: &[String]) {
         println!("================================================");
         for entry in game_log {

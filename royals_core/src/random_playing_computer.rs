@@ -4,20 +4,24 @@ use crate::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{Player, PlayerId},
+    player::{Player, PlayerData, PlayerId},
 };
 
 pub struct RandomPlayingComputer {
-    pub id: PlayerId,
+    pub data: PlayerData,
 }
 
 impl RandomPlayingComputer {
-    pub fn new(id: PlayerId) -> RandomPlayingComputer {
-        RandomPlayingComputer { id }
+    pub fn new(data: PlayerData) -> RandomPlayingComputer {
+        RandomPlayingComputer { data }
     }
 }
 
 impl Player for RandomPlayingComputer {
+    fn get_data(&self) -> &PlayerData {
+        &self.data
+    }
+
     fn notify(&self, _game_log: &[Event], _players: &[String]) {}
 
     fn obtain_action(

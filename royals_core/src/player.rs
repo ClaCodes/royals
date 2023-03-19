@@ -2,7 +2,16 @@ use crate::{card::Card, play::Action, Event};
 
 pub type PlayerId = usize;
 
+pub struct PlayerData {
+    pub id: PlayerId,
+    pub name: String,
+    pub protected: bool,
+    pub hand: Vec<Card>,
+}
+
 pub trait Player {
+    fn get_data(&self) -> &PlayerData;
+
     fn notify(&self, game_log: &[Event], players: &[String]);
 
     fn obtain_action(
