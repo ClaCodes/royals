@@ -29,7 +29,7 @@ pub enum Card {
     #[strum(
         message = "If you in addition to this card hold either Prince or King, you must play it instead of the King or Prince."
     )]
-    Contess,
+    Countess,
     #[strum(
         message = "You must never play this card. If you are force to fold this card by any means (for example if you opponent plays the prince), you drop out."
     )]

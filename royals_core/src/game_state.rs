@@ -37,7 +37,7 @@ impl GameState {
                 Card::Prince,
                 Card::Prince,
                 Card::King,
-                Card::Contess,
+                Card::Countess,
                 Card::Princess,
             ],
             players: vec![],
@@ -220,7 +220,7 @@ impl GameState {
         if play.card == Card::Princess {
             return false;
         }
-        if self.hand_cards[self.players_turn].contains(&Card::Contess) {
+        if self.hand_cards[self.players_turn].contains(&Card::Countess) {
             if play.card == Card::Prince || play.card == Card::King {
                 return false;
             }
@@ -319,7 +319,7 @@ impl GameState {
                     self.hand_cards[self.players_turn].push(op_card);
                 }
             }
-            Card::Contess => {}
+            Card::Countess => {}
             Card::Princess => self.drop_player(
                 self.players_turn,
                 "playing the princess is equivalent to giving up".to_string(),

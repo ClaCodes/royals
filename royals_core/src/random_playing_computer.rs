@@ -45,7 +45,7 @@ impl Player for RandomPlayingComputer {
                 opponent: None,
                 guess: None,
             };
-        } else if hand[1] == Card::Contess && (play.card == Card::King || play.card == Card::Prince)
+        } else if hand[1] == Card::Countess && (play.card == Card::King || play.card == Card::Prince)
         {
             play = Play {
                 card: hand[1],
@@ -67,7 +67,7 @@ impl Player for RandomPlayingComputer {
                     Card::Maid,
                     Card::Prince,
                     Card::King,
-                    Card::Contess,
+                    Card::Countess,
                     Card::Princess,
                 ];
                 p.guess = Some(*cards.choose(&mut rand::thread_rng()).unwrap());

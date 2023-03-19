@@ -256,7 +256,7 @@ impl Player for ConsolePlayer {
                         Card::Maid,
                         Card::Prince,
                         Card::King,
-                        Card::Contess,
+                        Card::Countess,
                         Card::Princess,
                     ],
                     "Choose the card you want to guess the opponent has:",
