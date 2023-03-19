@@ -7,12 +7,16 @@ use crate::{
     player::{Player, PlayerData, PlayerId},
 };
 
+static COMPUTER_NAMES: &[&str] = &["Computer Alpha", "Computer Bravo", "Computer Charlie"];
+
 pub struct RandomPlayingComputer {
     pub data: PlayerData,
 }
 
 impl RandomPlayingComputer {
     pub fn new(data: PlayerData) -> RandomPlayingComputer {
+        let mut data = data;
+        data.name = COMPUTER_NAMES[data.id % COMPUTER_NAMES.len()].to_string();
         RandomPlayingComputer { data }
     }
 }

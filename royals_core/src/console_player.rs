@@ -206,7 +206,17 @@ impl ConsolePlayer {
 
 impl ConsolePlayer {
     pub fn new(data: PlayerData) -> ConsolePlayer {
-        ConsolePlayer { data }
+        let mut d = data;
+        print!("Please Enter Name: ");
+        io::stdout().flush().unwrap();
+        if let Some(line) = io::stdin().lock().lines().next() {
+            if let Ok(s) = line {
+                d.name = s;
+            } else {
+                d.name = "You".to_string();
+            }
+        };
+        ConsolePlayer { data: d }
     }
 }
 
