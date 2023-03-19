@@ -36,20 +36,19 @@ pub enum Card {
     Princess,
 }
 
+use Card::*;
+
 impl Card {
     pub fn rules() -> String {
         Card::iter().map(|c| c.rule()).join("\n")
     }
 
     pub fn needs_guess(&self) -> bool {
-        self == &Card::Guard
+        matches!(self, Guard)
     }
 
     pub fn needs_opponent(&self) -> bool {
-        match self {
-            Card::Guard | Card::Priest | Card::Baron | Card::Prince | Card::King => true,
-            _ => false,
-        }
+        matches!(self, Guard | Priest | Baron | Prince | King)
     }
 
     pub fn rule(&self) -> String {
