@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 royals_core = { path = "../royals_core" }
+itertools = "0.10.5"
