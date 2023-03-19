@@ -9,7 +9,7 @@ use crate::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{PlayerId, PlayerInterface},
+    player::{PlayerId, Player},
 };
 
 static RULES: &str = "
@@ -187,7 +187,7 @@ impl ConsolePlayer {
     }
 }
 
-impl PlayerInterface for ConsolePlayer {
+impl Player for ConsolePlayer {
     fn notify(&self, game_log: &[Event], players: &[String]) {
         println!("================================================");
         for entry in game_log {

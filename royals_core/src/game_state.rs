@@ -5,23 +5,13 @@ use crate::{
     console_player::ConsolePlayer,
     event::{Event, EventEntry, EventVisibility},
     play::{Action, Play},
-    player::{PlayerId, PlayerInterface},
+    player::{Player, PlayerId},
     random_playing_computer::RandomPlayingComputer,
 };
 
-struct Player {
-    pub interface: Box<dyn PlayerInterface>,
-}
-
-impl Player {
-    pub fn new(interface: Box<dyn PlayerInterface>) -> Self {
-        Self { interface }
-    }
-}
-
 pub struct GameState {
     deck: Vec<Card>,
-    players: Vec<Player>,
+    players: Vec<Box<dyn Player>>,
     player_names: Vec<String>,
     hand_cards: Vec<Vec<Card>>,
     player_protected: Vec<bool>,
@@ -32,25 +22,7 @@ pub struct GameState {
 
 impl GameState {
     pub fn new() -> Self {
-        let mut players = vec![];
-        let mut player_names = vec![];
 
-        player_names.push("You");
-        player_names.push("Computer Alpha");
-        player_names.push("Computer Bravo");
-        player_names.push("Computer Charlie");
-        let player_names = player_names.iter().map(|x| x.to_string()).collect();
-        players.push(Player::new(Box::new(ConsolePlayer { id: players.len() })));
-        players.push(Player::new(Box::new(RandomPlayingComputer {
-            id: players.len(),
-        })));
-        players.push(Player::new(Box::new(RandomPlayingComputer {
-            id: players.len(),
-        })));
-        players.push(Player::new(Box::new(RandomPlayingComputer {
-            id: players.len(),
-        })));
-        //state.players.shuffle(&mut rand::thread_rng()); todo
         let player_protected = vec![false, false, false, false];
         let hand_cards: Vec<Vec<Card>> = vec![vec![], vec![], vec![], vec![]];
 
@@ -73,14 +45,38 @@ impl GameState {
                 Card::Contess,
                 Card::Princess,
             ],
-            players,
+            players: vec![],
             game_log: vec![],
-            player_names,
+            player_names: vec![],
             hand_cards,
             player_protected,
             players_turn: 0,
             running: true,
         };
+
+        state.add_player(
+            "You",
+            Box::new(ConsolePlayer {
+                id: state.players.len(),
+            }),
+        );
+
+        state.add_player(
+            "Computer Alpha",
+            Box::new(RandomPlayingComputer { id: state.players.len() }),
+        );
+
+        state.add_player(
+            "Computer Bravo",
+            Box::new(RandomPlayingComputer { id: state.players.len() }),
+        );
+
+        state.add_player(
+            "Computer Charlie",
+            Box::new(RandomPlayingComputer { id: state.players.len() }),
+        );
+
+        //state.players.shuffle(&mut rand::thread_rng()); todo
 
         state.deck.shuffle(&mut rand::thread_rng());
 
@@ -91,13 +87,18 @@ impl GameState {
         state
     }
 
+    fn add_player(&mut self, name: &str, player: Box<dyn Player>) {
+        self.player_names.push(name.to_string());
+        self.players.push(player);
+    }
+
     pub fn run(&mut self) {
         let mut ok = true;
         while self.running {
             if ok {
                 self.pick_up_card(self.players_turn);
             }
-            let user_action = self.players[self.players_turn].interface.obtain_action(
+            let user_action = self.players[self.players_turn].obtain_action(
                 &self.hand_cards[self.players_turn],
                 &self.player_names,
                 &self.filter_event(),
@@ -148,7 +149,7 @@ impl GameState {
             event: Event::Winner(best_players),
         });
         for p in &self.players {
-            p.interface.notify(&self.filter_event(), &self.player_names);
+            p.notify(&self.filter_event(), &self.player_names);
         }
     }
 

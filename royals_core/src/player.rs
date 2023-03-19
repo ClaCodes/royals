@@ -2,7 +2,7 @@ use crate::{card::Card, play::Action, Event};
 
 pub type PlayerId = usize;
 
-pub trait PlayerInterface {
+pub trait Player {
     fn notify(&self, game_log: &[Event], players: &[String]);
     fn obtain_action(
         &self,
