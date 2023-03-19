@@ -23,11 +23,11 @@ impl GameState {
     pub fn new() -> Self {
         let mut state = GameState {
             deck: vec![
-                Card::Guardian,
-                Card::Guardian,
-                Card::Guardian,
-                Card::Guardian,
-                Card::Guardian,
+                Card::Guard,
+                Card::Guard,
+                Card::Guard,
+                Card::Guard,
+                Card::Guard,
                 Card::Priest,
                 Card::Priest,
                 Card::Baron,
@@ -260,7 +260,7 @@ impl GameState {
         }
         self.player_protected[self.players_turn] = false;
         match p.card {
-            Card::Guardian => {
+            Card::Guard => {
                 if let Some(op) = p.opponent {
                     let g = p.guess.unwrap();
                     if self.hand_cards[op][0] == g {

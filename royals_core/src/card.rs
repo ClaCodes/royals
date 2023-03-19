@@ -7,7 +7,7 @@ pub enum Card {
     #[strum(
         message = "If you play this card, you may choose an opponent and attempt to guess their card. If you guess right they drop out of the game. You may not guess the Guardian."
     )]
-    Guardian,
+    Guard,
     #[strum(message = "If you play this card, you may choose an opponent and see their card.")]
     Priest,
     #[strum(
@@ -42,12 +42,12 @@ impl Card {
     }
 
     pub fn needs_guess(&self) -> bool {
-        self == &Card::Guardian
+        self == &Card::Guard
     }
 
     pub fn needs_opponent(&self) -> bool {
         match self {
-            Card::Guardian | Card::Priest | Card::Baron | Card::Prince | Card::King => true,
+            Card::Guard | Card::Priest | Card::Baron | Card::Prince | Card::King => true,
             _ => false,
         }
     }
