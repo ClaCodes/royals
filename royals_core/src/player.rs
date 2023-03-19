@@ -22,6 +22,14 @@ pub trait Player {
         self.data().protected.clone()
     }
 
+    fn hand(&self) -> &Vec<Card> {
+        &self.data().hand
+    }
+
+    fn hand_mut(&mut self) -> &mut Vec<Card> {
+        &mut self.data_mut().hand
+    }
+
     fn notify(&self, game_log: &[Event], players: &[String]);
 
     fn obtain_action(
