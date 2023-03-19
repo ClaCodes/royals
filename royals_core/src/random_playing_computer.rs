@@ -22,6 +22,10 @@ impl Player for RandomPlayingComputer {
         &self.data
     }
 
+    fn get_data_mut(&mut self) -> &mut PlayerData {
+        &mut self.data
+    }
+
     fn notify(&self, _game_log: &[Event], _players: &[String]) {}
 
     fn obtain_action(
@@ -45,7 +49,8 @@ impl Player for RandomPlayingComputer {
                 opponent: None,
                 guess: None,
             };
-        } else if hand[1] == Card::Countess && (play.card == Card::King || play.card == Card::Prince)
+        } else if hand[1] == Card::Countess
+            && (play.card == Card::King || play.card == Card::Prince)
         {
             play = Play {
                 card: hand[1],

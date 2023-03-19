@@ -12,6 +12,12 @@ pub struct PlayerData {
 pub trait Player {
     fn get_data(&self) -> &PlayerData;
 
+    fn get_data_mut(&mut self) -> &mut PlayerData;
+
+    fn name(&self) -> String {
+        self.get_data().name.clone()
+    }
+
     fn notify(&self, game_log: &[Event], players: &[String]);
 
     fn obtain_action(

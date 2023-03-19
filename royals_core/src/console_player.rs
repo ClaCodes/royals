@@ -198,6 +198,10 @@ impl Player for ConsolePlayer {
         &self.data
     }
 
+    fn get_data_mut(&mut self) -> &mut PlayerData {
+        &mut self.data
+    }
+
     fn notify(&self, game_log: &[Event], players: &[String]) {
         println!("================================================");
         for entry in game_log {

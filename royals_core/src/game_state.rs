@@ -13,7 +13,6 @@ pub struct GameState {
     deck: Vec<Card>,
     players: Vec<Box<dyn Player>>,
     hand_cards: Vec<Vec<Card>>,
-    player_protected: Vec<bool>,
     game_log: Vec<EventEntry>,
     players_turn: PlayerId,
     running: bool,
@@ -43,7 +42,6 @@ impl GameState {
             players: vec![],
             game_log: vec![],
             hand_cards: vec![vec![], vec![], vec![], vec![]],
-            player_protected: vec![false, false, false, false],
             players_turn: 0,
             running: true,
         };
@@ -96,8 +94,8 @@ impl GameState {
     }
 
     fn all_protected(&self) -> bool {
-        self.players.iter().enumerate().all(|(i, _)| {
-            self.hand_cards[i].is_empty() || self.player_protected[i] || i == self.players_turn
+        self.players.iter().enumerate().all(|(i, p)| {
+            self.hand_cards[i].is_empty() || p.get_data().protected || i == self.players_turn
         })
     }
 }
@@ -253,12 +251,12 @@ impl GameState {
         });
         if let Some(opponent) = p.opponent {
             // do not attack protected player
-            if self.player_protected[opponent] && !self.all_protected() {
+            if self.players[opponent].get_data().protected && !self.all_protected() {
                 self.drop_player(self.players_turn, "attacked a protected player".to_string());
                 return;
             }
         }
-        self.player_protected[self.players_turn] = false;
+        self.players[self.players_turn].get_data_mut().protected = false;
         match p.card {
             Card::Guard => {
                 if let Some(op) = p.opponent {
@@ -291,7 +289,7 @@ impl GameState {
                 }
             }
             Card::Maid => {
-                self.player_protected[self.players_turn] = true;
+                self.players[self.players_turn].get_data_mut().protected = true;
             }
             Card::Prince => {
                 if let Some(op) = p.opponent {
