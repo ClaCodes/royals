@@ -33,10 +33,6 @@ pub trait Player {
         &self.data().name
     }
 
-    fn set_name(&mut self, value: String) {
-        self.data_mut().name = value;
-    }
-
     fn protected(&self) -> bool {
         self.data().protected.clone()
     }
@@ -65,6 +61,6 @@ pub trait Player {
         players: &[&String],
         game_log: &[Event],
         all_protected: bool,
-        active_players: &[PlayerId],
+        other_active_players: &[PlayerId],
     ) -> Action;
 }

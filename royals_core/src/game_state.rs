@@ -9,7 +9,7 @@ use crate::{
     play::{Action, Play},
     player::{Player, PlayerId},
     random_playing_computer::RandomPlayingComputer,
-    utils::RemoveFirstWhere,
+    utils::VecExtensions,
 };
 
 pub struct GameState {
@@ -118,7 +118,7 @@ impl GameState {
                 &self.player_names(),
                 &self.filter_event(),
                 self.all_protected(),
-                &self.active_players().into_iter().collect::<Vec<_>>(),
+                &self.other_active_players().into_iter().collect::<Vec<_>>(),
             );
 
             match user_action {

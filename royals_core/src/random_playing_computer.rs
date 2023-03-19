@@ -39,7 +39,7 @@ impl Player for RandomPlayingComputer {
         players: &[&String],
         _game_log: &[Event],
         all_protected: bool,
-        _active_players: &[PlayerId],
+        _: &[PlayerId],
     ) -> Action {
         let mut hand = hand.to_vec();
         hand.shuffle(&mut rand::thread_rng());

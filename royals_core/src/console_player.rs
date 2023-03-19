@@ -10,6 +10,7 @@ use crate::{
     event::Event,
     play::{Action, Play},
     player::{Player, PlayerData, PlayerId},
+    utils::SliceExtensions,
 };
 
 static RULES: &str = "
@@ -120,21 +121,21 @@ impl ConsolePlayer {
         self.query_user(queries, prompt, players)
     }
 
-    fn prompt_opponent(&self, players: &[&String], active_players: &[PlayerId]) -> ConsoleAction {
+    fn prompt_opponent(
+        &self,
+        players: &[&String],
+        other_active_players: &[PlayerId],
+    ) -> ConsoleAction {
         let mut queries = vec![
             ConsoleAction::Quit,
             ConsoleAction::Rules,
             ConsoleAction::CardEffects,
         ];
-        let mut pl_ids = vec![];
-        for &i in active_players.iter() {
-            if i != self.id() {
-                queries.push(ConsoleAction::Player(i));
-                pl_ids.push(i);
-            }
+        for &id in other_active_players.iter() {
+            queries.push(ConsoleAction::Player(id));
         }
-        if pl_ids.len() == 1 {
-            return ConsoleAction::Player(pl_ids.pop().unwrap());
+        if let Some(id) = other_active_players.single_element() {
+            return ConsoleAction::Player(*id);
         }
         self.query_user(
             queries,
@@ -242,7 +243,7 @@ impl Player for ConsolePlayer {
         players: &[&String],
         game_log: &[Event],
         all_protected: bool,
-        active_players: &[PlayerId],
+        other_active_players: &[PlayerId],
     ) -> Action {
         self.notify(game_log, players);
 
@@ -265,7 +266,7 @@ impl Player for ConsolePlayer {
             }
 
             while opponent.is_none() {
-                let action = self.prompt_opponent(&players, &active_players);
+                let action = self.prompt_opponent(&players, &other_active_players);
                 match action {
                     ConsoleAction::Quit => return Action::GiveUp,
                     ConsoleAction::Rules => println!("{}", RULES),
