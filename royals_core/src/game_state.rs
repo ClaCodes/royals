@@ -14,7 +14,6 @@ pub struct GameState {
     players: Vec<Box<dyn Player>>,
     game_log: Vec<EventEntry>,
     players_turn: PlayerId,
-    running: bool,
 }
 
 impl GameState {
@@ -41,7 +40,6 @@ impl GameState {
             players: vec![],
             game_log: vec![],
             players_turn: 0,
-            running: true,
         };
 
         state.add_player("You", ConsolePlayer::new);
@@ -97,7 +95,8 @@ impl GameState {
 impl GameState {
     pub fn run(&mut self) {
         let mut ok = true;
-        while self.running {
+        let mut running = true;
+        while running {
             if ok {
                 self.pick_up_card(self.players_turn);
             }
@@ -112,13 +111,13 @@ impl GameState {
             match user_action {
                 Action::GiveUp => {
                     self.drop_player(self.players_turn, "Player gave up".to_string());
-                    self.next_player_turn();
+                    running = self.next_player_turn();
                 }
                 Action::Play(p) => {
                     ok = self.is_valid(&p);
                     if ok {
                         self.handle_play(p);
-                        self.next_player_turn();
+                        running = self.next_player_turn();
                     }
                 }
             }
@@ -199,13 +198,13 @@ impl GameState {
         });
     }
 
-    fn next_player_turn(&mut self) {
+    fn next_player_turn(&mut self) -> bool{
         self.players_turn = (self.players_turn + 1) % self.players.len();
         while self.players[self.players_turn].hand().is_empty() {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
         // last card is ussually not used
-        self.running = self.running && self.deck.len() > 1 && self.active_players().len() > 1;
+        self.deck.len() > 1 && self.active_players().len() > 1
     }
 
     fn is_valid(&self, play: &Play) -> bool {
