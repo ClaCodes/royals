@@ -80,7 +80,7 @@ impl GameState {
     fn player_names(&self) -> Vec<String> {
         self.players
             .iter()
-            .map(|p| p.as_ref().get_data().name.clone())
+            .map(|p| p.as_ref().name())
             .collect::<Vec<_>>()
     }
 
@@ -95,7 +95,7 @@ impl GameState {
 
     fn all_protected(&self) -> bool {
         self.players.iter().enumerate().all(|(i, p)| {
-            self.hand_cards[i].is_empty() || p.get_data().protected || i == self.players_turn
+            self.hand_cards[i].is_empty() || p.protected() || i == self.players_turn
         })
     }
 }
@@ -251,12 +251,12 @@ impl GameState {
         });
         if let Some(opponent) = p.opponent {
             // do not attack protected player
-            if self.players[opponent].get_data().protected && !self.all_protected() {
+            if self.players[opponent].protected() && !self.all_protected() {
                 self.drop_player(self.players_turn, "attacked a protected player".to_string());
                 return;
             }
         }
-        self.players[self.players_turn].get_data_mut().protected = false;
+        self.players[self.players_turn].data_mut().protected = false;
         match p.card {
             Card::Guard => {
                 if let Some(op) = p.opponent {
@@ -289,7 +289,7 @@ impl GameState {
                 }
             }
             Card::Maid => {
-                self.players[self.players_turn].get_data_mut().protected = true;
+                self.players[self.players_turn].data_mut().protected = true;
             }
             Card::Prince => {
                 if let Some(op) = p.opponent {

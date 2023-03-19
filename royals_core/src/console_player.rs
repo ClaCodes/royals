@@ -194,11 +194,11 @@ impl ConsolePlayer {
 }
 
 impl Player for ConsolePlayer {
-    fn get_data(&self) -> &PlayerData {
+    fn data(&self) -> &PlayerData {
         &self.data
     }
 
-    fn get_data_mut(&mut self) -> &mut PlayerData {
+    fn data_mut(&mut self) -> &mut PlayerData {
         &mut self.data
     }
 

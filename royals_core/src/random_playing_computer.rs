@@ -18,11 +18,11 @@ impl RandomPlayingComputer {
 }
 
 impl Player for RandomPlayingComputer {
-    fn get_data(&self) -> &PlayerData {
+    fn data(&self) -> &PlayerData {
         &self.data
     }
 
-    fn get_data_mut(&mut self) -> &mut PlayerData {
+    fn data_mut(&mut self) -> &mut PlayerData {
         &mut self.data
     }
 
