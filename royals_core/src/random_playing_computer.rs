@@ -4,25 +4,39 @@ use crate::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{PlayerId, PlayerInterface},
+    player::{Player, PlayerData, PlayerId},
 };
 
 pub struct RandomPlayingComputer {
-    pub id: PlayerId,
+    pub data: PlayerData,
 }
 
-impl PlayerInterface for RandomPlayingComputer {
+impl RandomPlayingComputer {
+    pub fn new(data: PlayerData) -> RandomPlayingComputer {
+        RandomPlayingComputer { data }
+    }
+}
+
+impl Player for RandomPlayingComputer {
+    fn data(&self) -> &PlayerData {
+        &self.data
+    }
+
+    fn data_mut(&mut self) -> &mut PlayerData {
+        &mut self.data
+    }
+
     fn notify(&self, _game_log: &[Event], _players: &[String]) {}
 
     fn obtain_action(
         &self,
-        hand_cards: &[Card],
+        hand: &[Card],
         players: &[String],
         _game_log: &[Event],
         all_protected: bool,
         _active_players: &[PlayerId],
     ) -> Action {
-        let mut hand = hand_cards.to_vec();
+        let mut hand = hand.to_vec();
         hand.shuffle(&mut rand::thread_rng());
         let mut play = Play {
             card: hand[0],
@@ -35,7 +49,8 @@ impl PlayerInterface for RandomPlayingComputer {
                 opponent: None,
                 guess: None,
             };
-        } else if hand[1] == Card::Contess && (play.card == Card::King || play.card == Card::Prince)
+        } else if hand[1] == Card::Countess
+            && (play.card == Card::King || play.card == Card::Prince)
         {
             play = Play {
                 card: hand[1],
@@ -57,7 +72,7 @@ impl PlayerInterface for RandomPlayingComputer {
                     Card::Maid,
                     Card::Prince,
                     Card::King,
-                    Card::Contess,
+                    Card::Countess,
                     Card::Princess,
                 ];
                 p.guess = Some(*cards.choose(&mut rand::thread_rng()).unwrap());

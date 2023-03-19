@@ -9,7 +9,7 @@ use crate::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{PlayerId, PlayerInterface},
+    player::{Player, PlayerId, PlayerData},
 };
 
 static RULES: &str = "
@@ -79,7 +79,7 @@ impl FromStr for ConsoleAction {
 }
 
 pub struct ConsolePlayer {
-    pub id: PlayerId,
+    pub data: PlayerData,
 }
 
 impl ConsolePlayer {
@@ -128,7 +128,7 @@ impl ConsolePlayer {
         ];
         let mut pl_ids = vec![];
         for i in active_players.iter() {
-            if *i != self.id {
+            if *i != self.data.id {
                 queries.push(ConsoleAction::Player(*i));
                 pl_ids.push(i);
             }
@@ -187,7 +187,21 @@ impl ConsolePlayer {
     }
 }
 
-impl PlayerInterface for ConsolePlayer {
+impl ConsolePlayer {
+    pub fn new(data: PlayerData) -> ConsolePlayer {
+        ConsolePlayer { data }
+    }
+}
+
+impl Player for ConsolePlayer {
+    fn data(&self) -> &PlayerData {
+        &self.data
+    }
+
+    fn data_mut(&mut self) -> &mut PlayerData {
+        &mut self.data
+    }
+
     fn notify(&self, game_log: &[Event], players: &[String]) {
         println!("================================================");
         for entry in game_log {
@@ -197,7 +211,7 @@ impl PlayerInterface for ConsolePlayer {
 
     fn obtain_action(
         &self,
-        hand_cards: &[Card],
+        hand: &[Card],
         players: &[String],
         game_log: &[Event],
         all_protected: bool,
@@ -208,7 +222,7 @@ impl PlayerInterface for ConsolePlayer {
         let mut card = None;
         while card.is_none() {
             let action =
-                self.prompt_card(&hand_cards, "Choose the card you want to play:", &players);
+                self.prompt_card(&hand, "Choose the card you want to play:", &players);
             match action {
                 ConsoleAction::Quit => return Action::GiveUp,
                 ConsoleAction::Rules => println!("{}", RULES),
@@ -246,7 +260,7 @@ impl PlayerInterface for ConsolePlayer {
                         Card::Maid,
                         Card::Prince,
                         Card::King,
-                        Card::Contess,
+                        Card::Countess,
                         Card::Princess,
                     ],
                     "Choose the card you want to guess the opponent has:",
