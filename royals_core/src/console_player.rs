@@ -143,9 +143,26 @@ impl ConsolePlayer {
         )
     }
 
+    pub fn format_play(&self, play: &Play, players: &[&String]) -> String {
+        let op_str = play
+            .opponent
+            .map(|op| format!("\n\tOpponent: {}", players[op]));
+        let guess_str = play.guess.map(|g| format!("\n\tGuess: {g}"));
+        format!(
+            "\n\t{}{}{}",
+            play.card.to_string(),
+            op_str.unwrap_or_default(),
+            guess_str.unwrap_or_default()
+        )
+    }
+
     fn print_event(&self, event: &Event, players: &[&String]) {
         match &event {
-            Event::Play(pl, p) => println!("~ Play: {} played {}", players[*pl], p.info()),
+            Event::Play(pl, p) => println!(
+                "~ Play: {} played {}",
+                players[*pl],
+                self.format_play(p, players)
+            ),
             Event::DropOut(pl) => println!("~ DropOut: {}", players[*pl]),
             Event::Fold(pl, c, reason) => println!(
                 "~ Fold: {} folded {}, because {}",
