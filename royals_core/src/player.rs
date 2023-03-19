@@ -26,7 +26,7 @@ pub trait Player {
 
     fn obtain_action(
         &self,
-        hand_cards: &[Card],
+        hand: &[Card],
         players: &[String],
         game_log: &[Event],
         all_protected: bool,

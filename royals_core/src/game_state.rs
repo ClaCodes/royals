@@ -12,7 +12,6 @@ use crate::{
 pub struct GameState {
     deck: Vec<Card>,
     players: Vec<Box<dyn Player>>,
-    hand_cards: Vec<Vec<Card>>,
     game_log: Vec<EventEntry>,
     players_turn: PlayerId,
     running: bool,
@@ -41,7 +40,6 @@ impl GameState {
             ],
             players: vec![],
             game_log: vec![],
-            hand_cards: vec![vec![], vec![], vec![], vec![]],
             players_turn: 0,
             running: true,
         };
@@ -78,25 +76,21 @@ impl GameState {
     }
 
     fn player_names(&self) -> Vec<String> {
-        self.players
-            .iter()
-            .map(|p| p.as_ref().name())
-            .collect::<Vec<_>>()
+        self.players.iter().map(|p| p.name()).collect::<Vec<_>>()
     }
 
     fn active_players(&self) -> Vec<PlayerId> {
-        self.hand_cards
+        self.players
             .iter()
-            .enumerate()
-            .filter(|(_, hc)| !hc.is_empty())
-            .map(|(i, _)| i)
+            .filter(|p| !p.data().hand.is_empty())
+            .map(|p| p.data().id)
             .collect()
     }
 
     fn all_protected(&self) -> bool {
-        self.players.iter().enumerate().all(|(i, p)| {
-            self.hand_cards[i].is_empty() || p.protected() || i == self.players_turn
-        })
+        self.players
+            .iter()
+            .all(|p| p.data().hand.is_empty() || p.protected() || p.data().id == self.players_turn)
     }
 }
 
@@ -108,7 +102,7 @@ impl GameState {
                 self.pick_up_card(self.players_turn);
             }
             let user_action = self.players[self.players_turn].obtain_action(
-                &self.hand_cards[self.players_turn],
+                &self.players[self.players_turn].data().hand,
                 &self.player_names(),
                 &self.filter_event(),
                 self.all_protected(),
@@ -134,8 +128,8 @@ impl GameState {
         }
         let mut best_players: Vec<PlayerId> = vec![];
         let mut best_card: Option<Card> = None;
-        for (i, _) in self.players.iter().enumerate() {
-            if let Some(player_card) = self.hand_cards[i].get(0) {
+        for (i, p) in self.players.iter().enumerate() {
+            if let Some(player_card) = p.data().hand.get(0) {
                 self.game_log.push(EventEntry {
                     visibility: EventVisibility::Public,
                     event: Event::Fold(i, player_card.clone(), "game is finished".to_string()),
@@ -189,11 +183,11 @@ impl GameState {
             visibility: EventVisibility::Private(player_id),
             event: Event::PickUp(player_id, Some(next_card.clone()), self.deck.len()),
         });
-        self.hand_cards[player_id].push(next_card);
+        self.players[player_id].data_mut().hand.push(next_card);
     }
 
     fn drop_player(&mut self, player_id: PlayerId, reason: String) {
-        while let Some(op_card) = self.hand_cards[player_id].pop() {
+        while let Some(op_card) = self.players[player_id].data_mut().hand.pop() {
             self.game_log.push(EventEntry {
                 visibility: EventVisibility::Public,
                 event: Event::Fold(player_id, op_card, reason.clone()),
@@ -207,7 +201,7 @@ impl GameState {
 
     fn next_player_turn(&mut self) {
         self.players_turn = (self.players_turn + 1) % self.players.len();
-        while self.hand_cards[self.players_turn].is_empty() {
+        while self.players[self.players_turn].data().hand.is_empty() {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
         // last card is ussually not used
@@ -218,7 +212,11 @@ impl GameState {
         if play.card == Card::Princess {
             return false;
         }
-        if self.hand_cards[self.players_turn].contains(&Card::Countess) {
+        if self.players[self.players_turn]
+            .data()
+            .hand
+            .contains(&Card::Countess)
+        {
             if play.card == Card::Prince || play.card == Card::King {
                 return false;
             }
@@ -232,7 +230,7 @@ impl GameState {
             if op == self.players_turn {
                 return false;
             }
-            if self.hand_cards[op].is_empty() {
+            if self.players[op].data().hand.is_empty() {
                 return false;
             }
         }
@@ -240,11 +238,16 @@ impl GameState {
     }
 
     fn handle_play(&mut self, p: Play) {
-        let index = self.hand_cards[self.players_turn]
+        let index = self.players[self.players_turn]
+            .data()
+            .hand
             .iter()
             .position(|x| *x == p.card)
             .unwrap();
-        self.hand_cards[self.players_turn].remove(index);
+        self.players[self.players_turn]
+            .data_mut()
+            .hand
+            .remove(index);
         self.game_log.push(EventEntry {
             visibility: EventVisibility::Public,
             event: Event::Play(self.players_turn, p.clone()),
@@ -261,7 +264,7 @@ impl GameState {
             Card::Guard => {
                 if let Some(op) = p.opponent {
                     let g = p.guess.unwrap();
-                    if self.hand_cards[op][0] == g {
+                    if self.players[op].data().hand[0] == g {
                         self.drop_player(op, "opponent guess the hand card".to_string())
                     }
                 }
@@ -270,14 +273,17 @@ impl GameState {
                 if let Some(op) = p.opponent {
                     self.game_log.push(EventEntry {
                         visibility: EventVisibility::Private(self.players_turn),
-                        event: Event::LearnedCard(op, Some(self.hand_cards[op][0].clone())),
+                        event: Event::LearnedCard(
+                            op,
+                            Some(self.players[op].data().hand[0].clone()),
+                        ),
                     });
                 }
             }
             Card::Baron => {
                 if let Some(op) = p.opponent {
-                    let op_card = self.hand_cards[op][0];
-                    let player_card = self.hand_cards[self.players_turn][0];
+                    let op_card = self.players[op].data().hand[0];
+                    let player_card = self.players[self.players_turn].data().hand[0];
                     if op_card < player_card {
                         self.drop_player(op, "smaller card then opponent".to_string());
                     } else if player_card < op_card {
@@ -293,10 +299,10 @@ impl GameState {
             }
             Card::Prince => {
                 if let Some(op) = p.opponent {
-                    if self.hand_cards[op][0] == Card::Princess {
+                    if self.players[op].data().hand[0] == Card::Princess {
                         self.drop_player(op, "forced to play the princess".to_string());
                     } else {
-                        let folded = self.hand_cards[op].pop().unwrap();
+                        let folded = self.players[op].data_mut().hand.pop().unwrap();
                         self.game_log.push(EventEntry {
                             visibility: EventVisibility::Public,
                             event: Event::Fold(
@@ -311,10 +317,14 @@ impl GameState {
             }
             Card::King => {
                 if let Some(op) = p.opponent {
-                    let op_card = self.hand_cards[op].pop().unwrap();
-                    let player_card = self.hand_cards[self.players_turn].pop().unwrap();
-                    self.hand_cards[op].push(player_card);
-                    self.hand_cards[self.players_turn].push(op_card);
+                    let op_card = self.players[op].data_mut().hand.pop().unwrap();
+                    let player_card = self.players[self.players_turn]
+                        .data_mut()
+                        .hand
+                        .pop()
+                        .unwrap();
+                    self.players[op].data_mut().hand.push(player_card);
+                    self.players[self.players_turn].data_mut().hand.push(op_card);
                 }
             }
             Card::Countess => {}

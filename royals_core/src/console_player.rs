@@ -211,7 +211,7 @@ impl Player for ConsolePlayer {
 
     fn obtain_action(
         &self,
-        hand_cards: &[Card],
+        hand: &[Card],
         players: &[String],
         game_log: &[Event],
         all_protected: bool,
@@ -222,7 +222,7 @@ impl Player for ConsolePlayer {
         let mut card = None;
         while card.is_none() {
             let action =
-                self.prompt_card(&hand_cards, "Choose the card you want to play:", &players);
+                self.prompt_card(&hand, "Choose the card you want to play:", &players);
             match action {
                 ConsoleAction::Quit => return Action::GiveUp,
                 ConsoleAction::Rules => println!("{}", RULES),

@@ -30,13 +30,13 @@ impl Player for RandomPlayingComputer {
 
     fn obtain_action(
         &self,
-        hand_cards: &[Card],
+        hand: &[Card],
         players: &[String],
         _game_log: &[Event],
         all_protected: bool,
         _active_players: &[PlayerId],
     ) -> Action {
-        let mut hand = hand_cards.to_vec();
+        let mut hand = hand.to_vec();
         hand.shuffle(&mut rand::thread_rng());
         let mut play = Play {
             card: hand[0],
