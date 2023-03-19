@@ -22,10 +22,6 @@ pub struct GameState {
 
 impl GameState {
     pub fn new() -> Self {
-
-        let player_protected = vec![false, false, false, false];
-        let hand_cards: Vec<Vec<Card>> = vec![vec![], vec![], vec![], vec![]];
-
         let mut state = GameState {
             deck: vec![
                 Card::Guardian,
@@ -48,33 +44,16 @@ impl GameState {
             players: vec![],
             game_log: vec![],
             player_names: vec![],
-            hand_cards,
-            player_protected,
+            hand_cards: vec![vec![], vec![], vec![], vec![]],
+            player_protected: vec![false, false, false, false],
             players_turn: 0,
             running: true,
         };
 
-        state.add_player(
-            "You",
-            Box::new(ConsolePlayer {
-                id: state.players.len(),
-            }),
-        );
-
-        state.add_player(
-            "Computer Alpha",
-            Box::new(RandomPlayingComputer { id: state.players.len() }),
-        );
-
-        state.add_player(
-            "Computer Bravo",
-            Box::new(RandomPlayingComputer { id: state.players.len() }),
-        );
-
-        state.add_player(
-            "Computer Charlie",
-            Box::new(RandomPlayingComputer { id: state.players.len() }),
-        );
+        state.add_player("You", ConsolePlayer::new);
+        state.add_player("Computer Alpha", RandomPlayingComputer::new);
+        state.add_player("Computer Bravo", RandomPlayingComputer::new);
+        state.add_player("Computer Charlie", RandomPlayingComputer::new);
 
         //state.players.shuffle(&mut rand::thread_rng()); todo
 
@@ -87,9 +66,14 @@ impl GameState {
         state
     }
 
-    fn add_player(&mut self, name: &str, player: Box<dyn Player>) {
+    fn add_player<C, T>(&mut self, name: &str, player_constructor: C)
+    where
+        C: Fn(PlayerId) -> T,
+        T: Player + 'static,
+    {
+        let player = player_constructor(self.players.len());
         self.player_names.push(name.to_string());
-        self.players.push(player);
+        self.players.push(Box::new(player));
     }
 
     pub fn run(&mut self) {

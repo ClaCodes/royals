@@ -4,11 +4,17 @@ use crate::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{PlayerId, Player},
+    player::{Player, PlayerId},
 };
 
 pub struct RandomPlayingComputer {
     pub id: PlayerId,
+}
+
+impl RandomPlayingComputer {
+    pub fn new(id: PlayerId) -> RandomPlayingComputer {
+        RandomPlayingComputer { id }
+    }
 }
 
 impl Player for RandomPlayingComputer {

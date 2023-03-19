@@ -4,6 +4,7 @@ pub type PlayerId = usize;
 
 pub trait Player {
     fn notify(&self, game_log: &[Event], players: &[String]);
+
     fn obtain_action(
         &self,
         hand_cards: &[Card],

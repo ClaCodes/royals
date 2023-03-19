@@ -9,7 +9,7 @@ use crate::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{PlayerId, Player},
+    player::{Player, PlayerId},
 };
 
 static RULES: &str = "
@@ -184,6 +184,12 @@ impl ConsolePlayer {
                 println!("Winner is {}", banner);
             }
         }
+    }
+}
+
+impl ConsolePlayer {
+    pub fn new(id: PlayerId) -> ConsolePlayer {
+        ConsolePlayer { id }
     }
 }
 
