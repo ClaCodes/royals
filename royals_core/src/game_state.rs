@@ -75,7 +75,7 @@ impl GameState {
         self.players.push(Box::new(player));
     }
 
-    fn player_names(&self) -> Vec<String> {
+    fn player_names(&self) -> Vec<&String> {
         self.players.iter().map(|p| p.name()).collect::<Vec<_>>()
     }
 
@@ -273,10 +273,7 @@ impl GameState {
                 if let Some(op) = p.opponent {
                     self.game_log.push(EventEntry {
                         visibility: EventVisibility::Private(self.players_turn),
-                        event: Event::LearnedCard(
-                            op,
-                            Some(self.players[op].hand()[0].clone()),
-                        ),
+                        event: Event::LearnedCard(op, Some(self.players[op].hand()[0].clone())),
                     });
                 }
             }

@@ -14,8 +14,8 @@ pub trait Player {
 
     fn data_mut(&mut self) -> &mut PlayerData;
 
-    fn name(&self) -> String {
-        self.data().name.clone()
+    fn name(&self) -> &String {
+        &self.data().name
     }
 
     fn protected(&self) -> bool {
@@ -30,12 +30,12 @@ pub trait Player {
         &mut self.data_mut().hand
     }
 
-    fn notify(&self, game_log: &[Event], players: &[String]);
+    fn notify(&self, game_log: &[Event], players: &[&String]);
 
     fn obtain_action(
         &self,
         hand: &[Card],
-        players: &[String],
+        players: &[&String],
         game_log: &[Event],
         all_protected: bool,
         active_players: &[PlayerId],

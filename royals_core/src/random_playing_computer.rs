@@ -26,12 +26,12 @@ impl Player for RandomPlayingComputer {
         &mut self.data
     }
 
-    fn notify(&self, _game_log: &[Event], _players: &[String]) {}
+    fn notify(&self, _game_log: &[Event], _players: &[&String]) {}
 
     fn obtain_action(
         &self,
         hand: &[Card],
-        players: &[String],
+        players: &[&String],
         _game_log: &[Event],
         all_protected: bool,
         _active_players: &[PlayerId],
