@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use rand::seq::SliceRandom;
 
 use crate::{
@@ -5,8 +7,9 @@ use crate::{
     console_player::ConsolePlayer,
     event::{Event, EventEntry, EventVisibility},
     play::{Action, Play},
-    player::{Player, PlayerData, PlayerId},
+    player::{Player, PlayerId},
     random_playing_computer::RandomPlayingComputer,
+    utils::RemoveFirstWhere,
 };
 
 pub struct GameState {
@@ -60,16 +63,11 @@ impl GameState {
 
     fn add_player<C, T>(&mut self, player_constructor: C)
     where
-        C: Fn(PlayerData) -> T,
+        C: Fn(PlayerId) -> T,
         T: Player + 'static,
     {
-        let player_data = PlayerData {
-            id: self.players.len(),
-            name: "".to_string(),
-            protected: false,
-            hand: vec![],
-        };
-        let player = player_constructor(player_data);
+        let id = self.players.len() as PlayerId;
+        let player = player_constructor(id);
         self.players.push(Box::new(player));
     }
 
@@ -77,18 +75,33 @@ impl GameState {
         self.players.iter().map(|p| p.name()).collect::<Vec<_>>()
     }
 
-    fn active_players(&self) -> Vec<PlayerId> {
+    fn active_players(&self) -> HashSet<PlayerId> {
         self.players
             .iter()
-            .filter(|p| !p.hand().is_empty())
-            .map(|p| p.data().id)
+            .filter(|p| p.is_active())
+            .map(|p| p.id())
             .collect()
     }
 
-    fn all_protected(&self) -> bool {
+    fn other_players(&self) -> HashSet<PlayerId> {
         self.players
             .iter()
-            .all(|p| p.hand().is_empty() || p.protected() || p.data().id == self.players_turn)
+            .map(|p| p.id())
+            .filter(|&id| id != self.players_turn)
+            .collect()
+    }
+
+    fn other_active_players(&self) -> HashSet<PlayerId> {
+        self.other_players()
+            .intersection(&self.active_players())
+            .cloned()
+            .collect::<HashSet<_>>()
+    }
+
+    fn all_protected(&self) -> bool {
+        self.other_active_players()
+            .iter()
+            .all(|&id| self.players[id].protected())
     }
 }
 
@@ -105,7 +118,7 @@ impl GameState {
                 &self.player_names(),
                 &self.filter_event(),
                 self.all_protected(),
-                &self.active_players(),
+                &self.active_players().into_iter().collect::<Vec<_>>(),
             );
 
             match user_action {
@@ -200,7 +213,7 @@ impl GameState {
 
     fn next_player_turn(&mut self) -> bool {
         self.players_turn = (self.players_turn + 1) % self.players.len();
-        while self.players[self.players_turn].hand().is_empty() {
+        while !self.players[self.players_turn].is_active() {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
         // last card is ussually not used
@@ -211,9 +224,11 @@ impl GameState {
         if play.card == Card::Princess {
             return false;
         }
+        if !self.players[self.players_turn].hand().contains(&play.card) {
+            return false;
+        }
         if self.players[self.players_turn]
-            .data()
-            .hand
+            .hand()
             .contains(&Card::Countess)
         {
             if play.card == Card::Prince || play.card == Card::King {
@@ -232,7 +247,7 @@ impl GameState {
             if op >= self.players.len() {
                 return false;
             }
-            if self.players[op].hand().is_empty() {
+            if !self.players[op].is_active() {
                 return false;
             }
         }
@@ -240,16 +255,11 @@ impl GameState {
     }
 
     fn handle_play(&mut self, p: Play) {
-        let index = self.players[self.players_turn]
-            .data()
-            .hand
-            .iter()
-            .position(|x| *x == p.card)
+        let card = self.players[self.players_turn]
+            .hand_mut()
+            .remove_first_where(|&card| card == p.card)
             .unwrap();
-        self.players[self.players_turn]
-            .data_mut()
-            .hand
-            .remove(index);
+
         self.game_log.push(EventEntry {
             visibility: EventVisibility::Public,
             event: Event::Play(self.players_turn, p.clone()),
@@ -261,13 +271,13 @@ impl GameState {
                 return;
             }
         }
-        self.players[self.players_turn].data_mut().protected = false;
-        match p.card {
+        self.players[self.players_turn].set_protected(false);
+        match card {
             Card::Guard => {
                 if let Some(op) = p.opponent {
                     let g = p.guess.unwrap();
                     if self.players[op].hand()[0] == g {
-                        self.drop_player(op, "opponent guess the hand card".to_string())
+                        self.drop_player(op, "opponent guessed the hand card".to_string())
                     }
                 }
             }
@@ -294,7 +304,7 @@ impl GameState {
                 }
             }
             Card::Maid => {
-                self.players[self.players_turn].data_mut().protected = true;
+                self.players[self.players_turn].set_protected(true);
             }
             Card::Prince => {
                 if let Some(op) = p.opponent {
@@ -317,11 +327,7 @@ impl GameState {
             Card::King => {
                 if let Some(op) = p.opponent {
                     let op_card = self.players[op].hand_mut().pop().unwrap();
-                    let player_card = self.players[self.players_turn]
-                        .data_mut()
-                        .hand
-                        .pop()
-                        .unwrap();
+                    let player_card = self.players[self.players_turn].hand_mut().pop().unwrap();
                     self.players[op].hand_mut().push(player_card);
                     self.players[self.players_turn].hand_mut().push(op_card);
                 }

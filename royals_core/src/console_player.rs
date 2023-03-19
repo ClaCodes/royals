@@ -127,14 +127,14 @@ impl ConsolePlayer {
             ConsoleAction::CardEffects,
         ];
         let mut pl_ids = vec![];
-        for i in active_players.iter() {
-            if *i != self.data.id {
-                queries.push(ConsoleAction::Player(*i));
+        for &i in active_players.iter() {
+            if i != self.id() {
+                queries.push(ConsoleAction::Player(i));
                 pl_ids.push(i);
             }
         }
         if pl_ids.len() == 1 {
-            return ConsoleAction::Player(*pl_ids.pop().unwrap());
+            return ConsoleAction::Player(pl_ids.pop().unwrap());
         }
         self.query_user(
             queries,
@@ -205,18 +205,18 @@ impl ConsolePlayer {
 }
 
 impl ConsolePlayer {
-    pub fn new(data: PlayerData) -> ConsolePlayer {
-        let mut d = data;
+    pub fn new(id: PlayerId) -> ConsolePlayer {
         print!("Please Enter Name: ");
         io::stdout().flush().unwrap();
-        if let Some(line) = io::stdin().lock().lines().next() {
-            if let Ok(s) = line {
-                d.name = s;
-            } else {
-                d.name = "You".to_string();
-            }
+
+        let name = match io::stdin().lock().lines().next() {
+            Some(Ok(line)) => line,
+            _ => "You".to_string(),
         };
-        ConsolePlayer { data: d }
+
+        ConsolePlayer {
+            data: PlayerData::new(id, name),
+        }
     }
 }
 

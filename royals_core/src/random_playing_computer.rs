@@ -14,10 +14,11 @@ pub struct RandomPlayingComputer {
 }
 
 impl RandomPlayingComputer {
-    pub fn new(data: PlayerData) -> RandomPlayingComputer {
-        let mut data = data;
-        data.name = COMPUTER_NAMES[data.id % COMPUTER_NAMES.len()].to_string();
-        RandomPlayingComputer { data }
+    pub fn new(id: PlayerId) -> RandomPlayingComputer {
+        let name = COMPUTER_NAMES[id % COMPUTER_NAMES.len()].to_string();
+        RandomPlayingComputer {
+            data: PlayerData::new(id, name),
+        }
     }
 }
 
