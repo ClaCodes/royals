@@ -120,58 +120,62 @@ mod tests {
 
     #[test]
     fn player_names_should_return_list_of_names() {
-        let mut state = GameState {
+        let state = GameState {
             deck: vec![],
-            players: vec![],
+            players: vec![
+                Box::new(TestPlayer::new(0, "Foo", false, vec![])),
+                Box::new(TestPlayer::new(1, "Bar", false, vec![])),
+            ],
             game_log: vec![],
             players_turn: 0,
         };
-        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![]));
-        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![]));
 
         assert_eq!(state.player_names(), vec!["Foo", "Bar"]);
     }
 
     #[test]
     fn active_players_should_return_player_ids_with_non_empty_hand() {
-        let mut state = GameState {
+        let state = GameState {
             deck: vec![],
-            players: vec![],
+            players: vec![
+                Box::new(TestPlayer::new(0, "Foo", false, vec![])),
+                Box::new(TestPlayer::new(1, "Bar", false, vec![Card::King])),
+            ],
             game_log: vec![],
             players_turn: 0,
         };
-        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![]));
-        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![Card::King]));
 
         assert_eq!(state.active_players(), HashSet::from([1]));
     }
 
     #[test]
     fn other_players_should_return_ids_of_others() {
-        let mut state = GameState {
+        let state = GameState {
             deck: vec![],
-            players: vec![],
+            players: vec![
+                Box::new(TestPlayer::new(0, "Foo", false, vec![])),
+                Box::new(TestPlayer::new(1, "Bar", false, vec![])),
+                Box::new(TestPlayer::new(2, "Baz", false, vec![])),
+            ],
             game_log: vec![],
             players_turn: 1, // Baz's turn
         };
-        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![Card::King]));
-        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![Card::King]));
-        state.add_player(|id| TestPlayer::new(id, "Baz", false, vec![Card::King]));
 
         assert_eq!(state.other_players(), HashSet::from([0, 2]));
     }
 
     #[test]
     fn all_protected_should_return_true_if_no_other_active_player_is_unprotected() {
-        let mut state = GameState {
+        let state = GameState {
             deck: vec![],
-            players: vec![],
+            players: vec![
+                Box::new(TestPlayer::new(0, "Foo", false, vec![])), // inactive
+                Box::new(TestPlayer::new(1, "Bar", false, vec![Card::King])), // Baz' turn
+                Box::new(TestPlayer::new(2, "Baz", true, vec![])),  // protected
+            ],
             game_log: vec![],
             players_turn: 1, // Baz' turn
         };
-        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![])); // inactive
-        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![Card::King])); // Baz' turn
-        state.add_player(|id| TestPlayer::new(id, "Baz", true, vec![Card::King])); // protected
 
         assert_eq!(state.all_protected(), true);
     }
@@ -180,14 +184,15 @@ mod tests {
     fn all_protected_should_return_false_if_at_least_one_other_active_player_is_unprotected() {
         let mut state = GameState {
             deck: vec![],
-            players: vec![],
+            players: vec![
+                Box::new(TestPlayer::new(0, "Foo", false, vec![])), // inactive
+                Box::new(TestPlayer::new(1, "Bar", false, vec![Card::King])), // Baz' turn
+                Box::new(TestPlayer::new(2, "Baz", true, vec![])),  // protected
+                Box::new(TestPlayer::new(3, "Qux", false, vec![])), // unprotected
+            ],
             game_log: vec![],
             players_turn: 1, // Baz' turn
         };
-        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![])); // inactive
-        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![Card::King])); // Baz' turn
-        state.add_player(|id| TestPlayer::new(id, "Baz", true, vec![Card::King])); // protected
-        state.add_player(|id| TestPlayer::new(id, "Qux", false, vec![Card::King])); // unprotected
 
         assert_eq!(state.all_protected(), false);
     }
