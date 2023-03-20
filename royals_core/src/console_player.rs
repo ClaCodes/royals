@@ -10,6 +10,7 @@ use crate::{
     event::Event,
     play::{Action, Play},
     player::{Player, PlayerData, PlayerId},
+    utils::SliceExtensions,
 };
 
 static RULES: &str = "
@@ -120,21 +121,21 @@ impl ConsolePlayer {
         self.query_user(queries, prompt, players)
     }
 
-    fn prompt_opponent(&self, players: &[&String], active_players: &[PlayerId]) -> ConsoleAction {
+    fn prompt_opponent(
+        &self,
+        players: &[&String],
+        other_active_players: &[PlayerId],
+    ) -> ConsoleAction {
         let mut queries = vec![
             ConsoleAction::Quit,
             ConsoleAction::Rules,
             ConsoleAction::CardEffects,
         ];
-        let mut pl_ids = vec![];
-        for i in active_players.iter() {
-            if *i != self.data.id {
-                queries.push(ConsoleAction::Player(*i));
-                pl_ids.push(i);
-            }
+        for &id in other_active_players.iter() {
+            queries.push(ConsoleAction::Player(id));
         }
-        if pl_ids.len() == 1 {
-            return ConsoleAction::Player(*pl_ids.pop().unwrap());
+        if let Some(id) = other_active_players.single_element() {
+            return ConsoleAction::Player(*id);
         }
         self.query_user(
             queries,
@@ -205,18 +206,18 @@ impl ConsolePlayer {
 }
 
 impl ConsolePlayer {
-    pub fn new(data: PlayerData) -> ConsolePlayer {
-        let mut d = data;
+    pub fn new(id: PlayerId) -> ConsolePlayer {
         print!("Please Enter Name: ");
         io::stdout().flush().unwrap();
-        if let Some(line) = io::stdin().lock().lines().next() {
-            if let Ok(s) = line {
-                d.name = s;
-            } else {
-                d.name = "You".to_string();
-            }
+
+        let name = match io::stdin().lock().lines().next() {
+            Some(Ok(line)) => line,
+            _ => "You".to_string(),
         };
-        ConsolePlayer { data: d }
+
+        ConsolePlayer {
+            data: PlayerData::new(id, name),
+        }
     }
 }
 
@@ -242,7 +243,7 @@ impl Player for ConsolePlayer {
         players: &[&String],
         game_log: &[Event],
         all_protected: bool,
-        active_players: &[PlayerId],
+        other_active_players: &[PlayerId],
     ) -> Action {
         self.notify(game_log, players);
 
@@ -265,7 +266,7 @@ impl Player for ConsolePlayer {
             }
 
             while opponent.is_none() {
-                let action = self.prompt_opponent(&players, &active_players);
+                let action = self.prompt_opponent(&players, &other_active_players);
                 match action {
                     ConsoleAction::Quit => return Action::GiveUp,
                     ConsoleAction::Rules => println!("{}", RULES),

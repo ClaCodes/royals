@@ -5,7 +5,7 @@ use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 #[derive(Debug, PartialEq, Copy, Clone, PartialOrd, Display, EnumIter, EnumString, EnumMessage)]
 pub enum Card {
     #[strum(
-        message = "If you play this card, you may choose an opponent and attempt to guess their card. If you guess right they drop out of the game. You may not guess the Guardian."
+        message = "If you play this card, you may choose an opponent and attempt to guess their card. If you guess right they drop out of the game. You may not guess the Guard."
     )]
     Guard,
     #[strum(message = "If you play this card, you may choose an opponent and see their card.")]
@@ -36,20 +36,19 @@ pub enum Card {
     Princess,
 }
 
+use Card::*;
+
 impl Card {
     pub fn rules() -> String {
         Card::iter().map(|c| c.rule()).join("\n")
     }
 
     pub fn needs_guess(&self) -> bool {
-        self == &Card::Guard
+        matches!(self, Guard)
     }
 
     pub fn needs_opponent(&self) -> bool {
-        match self {
-            Card::Guard | Card::Priest | Card::Baron | Card::Prince | Card::King => true,
-            _ => false,
-        }
+        matches!(self, Guard | Priest | Baron | Prince | King)
     }
 
     pub fn rule(&self) -> String {
