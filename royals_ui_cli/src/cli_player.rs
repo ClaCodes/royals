@@ -5,7 +5,7 @@ use std::{
 
 use itertools::Itertools;
 
-use crate::{
+use royals_core::{
     card::Card,
     event::Event,
     play::{Action, Play},
@@ -24,7 +24,7 @@ At the beginning a card is put to the side, that is hidden an not used except fo
 If all opponents are protected one may choose to not do anything.";
 
 #[derive(Debug, PartialEq)]
-enum ConsoleAction {
+enum CliAction {
     Quit,
     Rules,
     CardEffects,
@@ -35,41 +35,41 @@ enum ConsoleAction {
 #[derive(Debug, PartialEq, Eq)]
 struct ParseActionError;
 
-impl ConsoleAction {
+impl CliAction {
     fn info(&self, players: &[&String]) -> String {
         match self {
-            ConsoleAction::Quit => "quit".to_string(),
-            ConsoleAction::Rules => "display rules".to_string(),
-            ConsoleAction::CardEffects => "display card effects".to_string(),
-            ConsoleAction::Card(c) => c.rule().to_string(),
-            ConsoleAction::Player(id) => players[*id].clone(),
+            CliAction::Quit => "quit".to_string(),
+            CliAction::Rules => "display rules".to_string(),
+            CliAction::CardEffects => "display card effects".to_string(),
+            CliAction::Card(c) => c.rule().to_string(),
+            CliAction::Player(id) => players[*id].clone(),
         }
     }
 
     fn cmd_str(&self) -> String {
         match self {
-            ConsoleAction::Quit => "q".to_string(),
-            ConsoleAction::Rules => "r".to_string(),
-            ConsoleAction::CardEffects => "c".to_string(),
-            ConsoleAction::Card(c) => c.to_string(),
-            ConsoleAction::Player(id) => id.to_string(),
+            CliAction::Quit => "q".to_string(),
+            CliAction::Rules => "r".to_string(),
+            CliAction::CardEffects => "c".to_string(),
+            CliAction::Card(c) => c.to_string(),
+            CliAction::Player(id) => id.to_string(),
         }
     }
 }
 
-impl FromStr for ConsoleAction {
+impl FromStr for CliAction {
     type Err = ParseActionError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "q" => Ok(ConsoleAction::Quit),
-            "r" => Ok(ConsoleAction::Rules),
-            "c" => Ok(ConsoleAction::CardEffects),
+            "q" => Ok(CliAction::Quit),
+            "r" => Ok(CliAction::Rules),
+            "c" => Ok(CliAction::CardEffects),
             _ => {
                 if let Ok(p) = Card::from_str(s) {
-                    Ok(ConsoleAction::Card(p))
+                    Ok(CliAction::Card(p))
                 } else {
                     if let Ok(p) = usize::from_str(s) {
-                        Ok(ConsoleAction::Player(p))
+                        Ok(CliAction::Player(p))
                     } else {
                         Err(ParseActionError)
                     }
@@ -79,17 +79,17 @@ impl FromStr for ConsoleAction {
     }
 }
 
-pub struct ConsolePlayer {
+pub struct CliPlayer {
     pub data: PlayerData,
 }
 
-impl ConsolePlayer {
+impl CliPlayer {
     fn query_user(
         &self,
-        cmds: Vec<ConsoleAction>,
+        cmds: Vec<CliAction>,
         prompt: &str,
         players: &[&String],
-    ) -> ConsoleAction {
+    ) -> CliAction {
         let mut op = None;
         print!("\n{}\n", prompt);
         while let None = op {
@@ -99,7 +99,7 @@ impl ConsolePlayer {
             print!(">");
             io::stdout().flush().unwrap();
             if let Some(line) = io::stdin().lock().lines().next() {
-                if let Ok(s) = ConsoleAction::from_str(&line.unwrap()) {
+                if let Ok(s) = CliAction::from_str(&line.unwrap()) {
                     op = Some(s);
                 } else {
                     op = None;
@@ -109,14 +109,14 @@ impl ConsolePlayer {
         op.unwrap()
     }
 
-    fn prompt_card(&self, cards: &[Card], prompt: &str, players: &[&String]) -> ConsoleAction {
+    fn prompt_card(&self, cards: &[Card], prompt: &str, players: &[&String]) -> CliAction {
         let mut queries = vec![
-            ConsoleAction::Quit,
-            ConsoleAction::Rules,
-            ConsoleAction::CardEffects,
+            CliAction::Quit,
+            CliAction::Rules,
+            CliAction::CardEffects,
         ];
         for c in cards {
-            queries.push(ConsoleAction::Card(c.clone()));
+            queries.push(CliAction::Card(c.clone()));
         }
         self.query_user(queries, prompt, players)
     }
@@ -125,17 +125,17 @@ impl ConsolePlayer {
         &self,
         players: &[&String],
         other_active_players: &[PlayerId],
-    ) -> ConsoleAction {
+    ) -> CliAction {
         let mut queries = vec![
-            ConsoleAction::Quit,
-            ConsoleAction::Rules,
-            ConsoleAction::CardEffects,
+            CliAction::Quit,
+            CliAction::Rules,
+            CliAction::CardEffects,
         ];
         for &id in other_active_players.iter() {
-            queries.push(ConsoleAction::Player(id));
+            queries.push(CliAction::Player(id));
         }
         if let Some(id) = other_active_players.single_element() {
-            return ConsoleAction::Player(*id);
+            return CliAction::Player(*id);
         }
         self.query_user(
             queries,
@@ -205,8 +205,8 @@ impl ConsolePlayer {
     }
 }
 
-impl ConsolePlayer {
-    pub fn new(id: PlayerId) -> ConsolePlayer {
+impl CliPlayer {
+    pub fn new(id: PlayerId) -> CliPlayer {
         print!("Please Enter Name: ");
         io::stdout().flush().unwrap();
 
@@ -215,13 +215,13 @@ impl ConsolePlayer {
             _ => "You".to_string(),
         };
 
-        ConsolePlayer {
+        CliPlayer {
             data: PlayerData::new(id, name),
         }
     }
 }
 
-impl Player for ConsolePlayer {
+impl Player for CliPlayer {
     fn data(&self) -> &PlayerData {
         &self.data
     }
@@ -251,10 +251,10 @@ impl Player for ConsolePlayer {
         while card.is_none() {
             let action = self.prompt_card(&hand, "Choose the card you want to play:", &players);
             match action {
-                ConsoleAction::Quit => return Action::GiveUp,
-                ConsoleAction::Rules => println!("{}", RULES),
-                ConsoleAction::CardEffects => println!("{}", Card::rules()),
-                ConsoleAction::Card(c) => card = Some(c),
+                CliAction::Quit => return Action::GiveUp,
+                CliAction::Rules => println!("{}", RULES),
+                CliAction::CardEffects => println!("{}", Card::rules()),
+                CliAction::Card(c) => card = Some(c),
                 _ => {}
             }
         }
@@ -268,10 +268,10 @@ impl Player for ConsolePlayer {
             while opponent.is_none() {
                 let action = self.prompt_opponent(&players, &other_active_players);
                 match action {
-                    ConsoleAction::Quit => return Action::GiveUp,
-                    ConsoleAction::Rules => println!("{}", RULES),
-                    ConsoleAction::CardEffects => println!("{}", Card::rules()),
-                    ConsoleAction::Player(c) => opponent = Some(c),
+                    CliAction::Quit => return Action::GiveUp,
+                    CliAction::Rules => println!("{}", RULES),
+                    CliAction::CardEffects => println!("{}", Card::rules()),
+                    CliAction::Player(c) => opponent = Some(c),
                     _ => {}
                 }
             }
@@ -294,10 +294,10 @@ impl Player for ConsolePlayer {
                     &players,
                 );
                 match action {
-                    ConsoleAction::Quit => return Action::GiveUp,
-                    ConsoleAction::Rules => println!("{}", RULES),
-                    ConsoleAction::CardEffects => println!("{}", Card::rules()),
-                    ConsoleAction::Card(c) => guess = Some(c),
+                    CliAction::Quit => return Action::GiveUp,
+                    CliAction::Rules => println!("{}", RULES),
+                    CliAction::CardEffects => println!("{}", Card::rules()),
+                    CliAction::Card(c) => guess = Some(c),
                     _ => {}
                 }
             }

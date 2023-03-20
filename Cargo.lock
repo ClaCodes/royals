@@ -125,6 +125,7 @@ dependencies = [
 name = "royals_ui_cli"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "royals_core",
 ]
 

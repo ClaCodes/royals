@@ -4,7 +4,6 @@ use rand::seq::SliceRandom;
 
 use crate::{
     card::Card,
-    console_player::ConsolePlayer,
     event::{Event, EventEntry, EventVisibility},
     play::{Action, Play},
     player::{Player, PlayerId},
@@ -20,7 +19,11 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new() -> Self {
+    pub fn new<C, T>(player_constructor: C) -> Self
+    where
+        C: Fn(PlayerId) -> T,
+        T: Player + 'static,
+    {
         let mut state = GameState {
             deck: vec![
                 Card::Guard,
@@ -45,7 +48,7 @@ impl GameState {
             players_turn: 0,
         };
 
-        state.add_player(ConsolePlayer::new);
+        state.add_player(player_constructor);
         state.add_player(RandomPlayingComputer::new);
         state.add_player(RandomPlayingComputer::new);
         state.add_player(RandomPlayingComputer::new);

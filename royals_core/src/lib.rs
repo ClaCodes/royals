@@ -1,16 +1,20 @@
 use event::Event;
 use game_state::GameState;
+use player::{Player, PlayerId};
 
-mod card;
-mod console_player;
-mod event;
+pub mod card;
+pub mod event;
 mod game_state;
-mod play;
-mod player;
+pub mod play;
+pub mod player;
 mod random_playing_computer;
-mod utils;
+pub mod utils;
 
-pub fn run_game() {
-    let mut game = GameState::new();
+pub fn run_game<C, T>(player_constructor: C)
+where
+    C: Fn(PlayerId) -> T,
+    T: Player + 'static,
+{
+    let mut game = GameState::new(player_constructor);
     game.run()
 }
