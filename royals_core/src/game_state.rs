@@ -105,3 +105,132 @@ impl GameState {
             .all(|&id| self.players[id].protected())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use crate::{
+        card::Card,
+        event::Event,
+        game_state::GameState,
+        play::Action,
+        player::{Player, PlayerData, PlayerId},
+    };
+
+    #[test]
+    fn player_names_should_return_list_of_names() {
+        let mut state = GameState {
+            deck: vec![],
+            players: vec![],
+            game_log: vec![],
+            players_turn: 0,
+        };
+        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![]));
+        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![]));
+
+        assert_eq!(state.player_names(), vec!["Foo", "Bar"]);
+    }
+
+    #[test]
+    fn active_players_should_return_player_ids_with_non_empty_hand() {
+        let mut state = GameState {
+            deck: vec![],
+            players: vec![],
+            game_log: vec![],
+            players_turn: 0,
+        };
+        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![]));
+        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![Card::King]));
+
+        assert_eq!(state.active_players(), HashSet::from([1]));
+    }
+
+    #[test]
+    fn other_players_should_return_ids_of_others() {
+        let mut state = GameState {
+            deck: vec![],
+            players: vec![],
+            game_log: vec![],
+            players_turn: 1, // Baz's turn
+        };
+        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![Card::King]));
+        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![Card::King]));
+        state.add_player(|id| TestPlayer::new(id, "Baz", false, vec![Card::King]));
+
+        assert_eq!(state.other_players(), HashSet::from([0, 2]));
+    }
+
+    #[test]
+    fn all_protected_should_return_true_if_no_other_active_player_is_unprotected() {
+        let mut state = GameState {
+            deck: vec![],
+            players: vec![],
+            game_log: vec![],
+            players_turn: 1, // Baz' turn
+        };
+        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![])); // inactive
+        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![Card::King])); // Baz' turn
+        state.add_player(|id| TestPlayer::new(id, "Baz", true, vec![Card::King])); // protected
+
+        assert_eq!(state.all_protected(), true);
+    }
+
+    #[test]
+    fn all_protected_should_return_false_if_at_least_one_other_active_player_is_unprotected() {
+        let mut state = GameState {
+            deck: vec![],
+            players: vec![],
+            game_log: vec![],
+            players_turn: 1, // Baz' turn
+        };
+        state.add_player(|id| TestPlayer::new(id, "Foo", false, vec![])); // inactive
+        state.add_player(|id| TestPlayer::new(id, "Bar", false, vec![Card::King])); // Baz' turn
+        state.add_player(|id| TestPlayer::new(id, "Baz", true, vec![Card::King])); // protected
+        state.add_player(|id| TestPlayer::new(id, "Qux", false, vec![Card::King])); // unprotected
+
+        assert_eq!(state.all_protected(), false);
+    }
+
+    // Infra ----------------------------------------------------------------
+
+    pub struct TestPlayer {
+        pub data: PlayerData,
+    }
+
+    impl TestPlayer {
+        pub fn new(id: PlayerId, name: &str, protected: bool, hand: Vec<Card>) -> Self {
+            let mut player = TestPlayer {
+                data: PlayerData::new(id, name.to_string()),
+            };
+            player.set_protected(protected);
+            *player.hand_mut() = hand;
+            player
+        }
+    }
+
+    impl Player for TestPlayer {
+        fn data(&self) -> &PlayerData {
+            &self.data
+        }
+
+        fn data_mut(&mut self) -> &mut PlayerData {
+            &mut self.data
+        }
+
+        fn notify(&self, _game_log: &[Event], _players: &[&String]) {
+            todo!()
+        }
+
+        fn obtain_action(
+            &self,
+            _hand: &[Card],
+            _players: &[&String],
+            _game_log: &[Event],
+            _all_protected: bool,
+            _other_active_players: &[PlayerId],
+        ) -> Action {
+            todo!()
+        }
+    }
+}
