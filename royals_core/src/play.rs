@@ -7,7 +7,7 @@ pub struct Play {
     pub guess: Option<Card>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Action {
     GiveUp,
     Play(Play),

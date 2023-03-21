@@ -1,9 +1,8 @@
-use rand::seq::SliceRandom;
+use rand::Rng;
 
 use crate::{
-    card::Card,
     event::Event,
-    play::{Action, Play},
+    play::Action,
     player::{Player, PlayerData, PlayerId},
 };
 
@@ -35,54 +34,16 @@ impl Player for RandomPlayingComputer {
 
     fn obtain_action(
         &self,
-        hand: &[Card],
-        players: &[&String],
+        _players: &[&String],
         _game_log: &[Event],
-        all_protected: bool,
-        _: &[PlayerId],
-    ) -> Action {
-        let mut hand = hand.to_vec();
-        hand.shuffle(&mut rand::thread_rng());
-        let mut play = Play {
-            card: hand[0],
-            opponent: None,
-            guess: None,
-        };
-        if play.card == Card::Princess {
-            play = Play {
-                card: hand[1],
-                opponent: None,
-                guess: None,
-            };
-        } else if hand[1] == Card::Countess
-            && (play.card == Card::King || play.card == Card::Prince)
-        {
-            play = Play {
-                card: hand[1],
-                opponent: None,
-                guess: None,
-            };
+        valid_action: &[Action],
+    ) -> usize {
+        let mut rng = rand::thread_rng();
+        let len = valid_action.len();
+        let mut action_index = rng.gen_range(0, len);
+        while len > 1 && valid_action[action_index] == Action::GiveUp {
+            action_index = rng.gen_range(0, len);
         }
-        let mut action = Action::Play(play);
-        if let Action::Play(p) = &mut action {
-            if p.card.needs_opponent() && !all_protected {
-                let chosen = players.choose(&mut rand::thread_rng()).unwrap();
-                let index = players.iter().position(|x| x == chosen).unwrap();
-                p.opponent = Some(index);
-            }
-            if p.card.needs_guess() && !all_protected {
-                let cards = vec![
-                    Card::Priest,
-                    Card::Baron,
-                    Card::Maid,
-                    Card::Prince,
-                    Card::King,
-                    Card::Countess,
-                    Card::Princess,
-                ];
-                p.guess = Some(*cards.choose(&mut rand::thread_rng()).unwrap());
-            }
-        }
-        action
+        action_index
     }
 }

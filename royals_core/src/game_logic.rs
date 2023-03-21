@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
     card::Card,
     event::{Event, EventEntry, EventVisibility},
@@ -15,24 +17,24 @@ impl GameState {
             if ok {
                 self.pick_up_card(self.players_turn);
             }
-            let user_action = self.players[self.players_turn].obtain_action(
-                &self.players[self.players_turn].hand(),
+            let actions = self.valid_actions();
+            let chosen_action_index = self.players[self.players_turn].obtain_action(
                 &self.player_names(),
                 &self.filter_event(),
-                self.all_protected(),
-                &self.other_active_players().into_iter().collect::<Vec<_>>(),
+                &actions,
             );
-
-            match user_action {
-                Action::GiveUp => {
-                    self.drop_player(self.players_turn, "Player gave up".to_string());
-                    running = self.next_player_turn();
-                }
-                Action::Play(p) => {
-                    ok = self.is_valid(&p);
-                    if ok {
-                        self.handle_play(p);
+            ok = chosen_action_index < actions.len();
+            if ok {
+                match &actions[chosen_action_index] {
+                    Action::GiveUp => {
+                        self.drop_player(self.players_turn, "Player gave up".to_string());
                         running = self.next_player_turn();
+                    }
+                    Action::Play(p) => {
+                        if ok {
+                            self.handle_play(p);
+                            running = self.next_player_turn();
+                        }
                     }
                 }
             }
@@ -68,6 +70,45 @@ impl GameState {
         for p in &self.players {
             p.notify(&self.filter_event(), &self.player_names());
         }
+    }
+
+    fn valid_actions(&self) -> Vec<Action> {
+        let mut actions = vec![Action::GiveUp];
+        let mut first_card:Option<Card> = None;
+
+        for card in self.players[self.players_turn].hand() {
+
+            // avoid dublicate entries
+            if first_card.is_none(){
+                first_card = Some(card.clone());
+            } else if first_card.unwrap() == *card {
+                break;
+            }
+
+            actions.push(Action::Play(Play {
+                card: *card,
+                opponent: None,
+                guess: None,
+            }));
+            for opponent in self.other_active_players() {
+                actions.push(Action::Play(Play {
+                    card: *card,
+                    opponent: Some(opponent),
+                    guess: None,
+                }));
+                for guess in Card::guessable() {
+                    actions.push(Action::Play(Play {
+                        card: *card,
+                        opponent: Some(opponent),
+                        guess: Some(*guess),
+                    }));
+                }
+            }
+        }
+        actions
+            .into_iter()
+            .filter(|a| self.is_valid(a))
+            .collect_vec()
     }
 
     fn filter_event(&self) -> Vec<Event> {
@@ -122,41 +163,58 @@ impl GameState {
         self.deck.len() > 1 && self.active_players().len() > 1
     }
 
-    fn is_valid(&self, play: &Play) -> bool {
-        if play.card == Card::Princess {
-            return false;
-        }
-        if !self.players[self.players_turn].hand().contains(&play.card) {
-            return false;
-        }
-        if self.players[self.players_turn]
-            .hand()
-            .contains(&Card::Countess)
-        {
-            if play.card == Card::Prince || play.card == Card::King {
-                return false;
+    fn is_valid(&self, action: &Action) -> bool {
+        match action {
+            Action::GiveUp => true,
+            Action::Play(play) => {
+                if !self.players[self.players_turn].hand().contains(&play.card) {
+                    return false;
+                }
+                if self.players[self.players_turn]
+                    .hand()
+                    .contains(&Card::Countess)
+                {
+                    if play.card == Card::Prince || play.card == Card::King {
+                        return false;
+                    }
+                }
+                if !play.card.needs_opponent() {
+                    if play.opponent.is_some() {
+                        return false;
+                    }
+                } else if !self.all_protected() {
+                    if play.opponent.is_none() {
+                        return false;
+                    }
+                }
+
+                if !play.card.needs_guess() {
+                    if play.guess.is_some() {
+                        return false;
+                    }
+                } else if !self.all_protected() {
+                    if play.guess.is_none() {
+                        return false;
+                    }
+                }
+
+                if let Some(op) = play.opponent {
+                    if op == self.players_turn {
+                        return false;
+                    }
+                    if op >= self.players.len() {
+                        return false;
+                    }
+                    if !self.players[op].is_active() {
+                        return false;
+                    }
+                }
+                true
             }
         }
-        if play.opponent.is_none() && play.card.needs_opponent() {
-            if !self.all_protected() {
-                return false;
-            }
-        }
-        if let Some(op) = play.opponent {
-            if op == self.players_turn {
-                return false;
-            }
-            if op >= self.players.len() {
-                return false;
-            }
-            if !self.players[op].is_active() {
-                return false;
-            }
-        }
-        true
     }
 
-    fn handle_play(&mut self, p: Play) {
+    fn handle_play(&mut self, p: &Play) {
         let card = self.players[self.players_turn]
             .hand_mut()
             .remove_first_where(|&card| card == p.card)

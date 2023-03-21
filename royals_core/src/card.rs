@@ -47,6 +47,10 @@ impl Card {
         matches!(self, Guard)
     }
 
+    pub fn guessable() -> &'static [Card] {
+        &[Priest, Baron, Maid, Prince, King, Countess, Princess]
+    }
+
     pub fn needs_opponent(&self) -> bool {
         matches!(self, Guard | Priest | Baron | Prince | King)
     }
