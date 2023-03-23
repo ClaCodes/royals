@@ -57,10 +57,8 @@ pub trait Player {
 
     fn obtain_action(
         &self,
-        hand: &[Card],
         players: &[&String],
         game_log: &[Event],
-        all_protected: bool,
-        other_active_players: &[PlayerId],
-    ) -> Action;
+        valid_actions: &[Action],
+    ) -> usize;
 }

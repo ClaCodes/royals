@@ -170,8 +170,8 @@ mod tests {
             deck: vec![],
             players: vec![
                 Box::new(TestPlayer::new(0, "Foo", false, vec![])), // inactive
-                Box::new(TestPlayer::new(1, "Bar", false, vec![Card::King])), // Baz' turn
-                Box::new(TestPlayer::new(2, "Baz", true, vec![])),  // protected
+                Box::new(TestPlayer::new(1, "Baz", false, vec![Card::King])), // Baz' turn
+                Box::new(TestPlayer::new(2, "Bar", true, vec![])),  // protected
             ],
             game_log: vec![],
             players_turn: 1, // Baz' turn
@@ -182,13 +182,13 @@ mod tests {
 
     #[test]
     fn all_protected_should_return_false_if_at_least_one_other_active_player_is_unprotected() {
-        let mut state = GameState {
+        let state = GameState {
             deck: vec![],
             players: vec![
                 Box::new(TestPlayer::new(0, "Foo", false, vec![])), // inactive
-                Box::new(TestPlayer::new(1, "Bar", false, vec![Card::King])), // Baz' turn
-                Box::new(TestPlayer::new(2, "Baz", true, vec![])),  // protected
-                Box::new(TestPlayer::new(3, "Qux", false, vec![])), // unprotected
+                Box::new(TestPlayer::new(1, "Baz", false, vec![Card::King])), // Baz' turn
+                Box::new(TestPlayer::new(2, "Bar", true, vec![])),  // protected
+                Box::new(TestPlayer::new(3, "Qux", false, vec![Card::Guard])), // unprotected
             ],
             game_log: vec![],
             players_turn: 1, // Baz' turn
@@ -229,12 +229,10 @@ mod tests {
 
         fn obtain_action(
             &self,
-            _hand: &[Card],
             _players: &[&String],
             _game_log: &[Event],
-            _all_protected: bool,
-            _other_active_players: &[PlayerId],
-        ) -> Action {
+            _actions: &[Action],
+        ) -> usize {
             todo!()
         }
     }

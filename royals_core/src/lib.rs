@@ -4,8 +4,8 @@ use player::{Player, PlayerId};
 
 pub mod card;
 pub mod event;
-mod game_state;
 mod game_logic;
+mod game_state;
 pub mod play;
 pub mod player;
 mod random_playing_computer;
