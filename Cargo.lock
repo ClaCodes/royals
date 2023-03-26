@@ -2873,6 +2873,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_egui",
+ "itertools",
  "royals_core",
 ]
 

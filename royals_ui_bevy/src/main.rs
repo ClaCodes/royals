@@ -50,7 +50,6 @@ fn receiver_system(
     mut game_state: ResMut<GameState>,
 ) {
     while let Ok(event) = receiver.try_recv() {
-        println!("Received message from game thread: {:?}", &event);
         game_state.as_mut().last_event = Some(event);
     }
 }
