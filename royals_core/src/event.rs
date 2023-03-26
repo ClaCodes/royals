@@ -1,6 +1,6 @@
 use crate::{card::Card, play::Play, player::PlayerId};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Event {
     Play(PlayerId, Play),
     Fold(PlayerId, Card, String),
