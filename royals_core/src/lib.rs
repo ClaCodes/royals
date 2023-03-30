@@ -13,7 +13,7 @@ pub mod utils;
 
 pub fn run_game<C, T>(player_constructor: C)
 where
-    C: Fn(PlayerId) -> T,
+    C: FnOnce(PlayerId) -> T,
     T: Player + 'static,
 {
     let mut game = GameState::new(player_constructor);

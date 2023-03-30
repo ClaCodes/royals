@@ -19,7 +19,7 @@ pub struct GameState {
 impl GameState {
     pub fn new<C, T>(player_constructor: C) -> Self
     where
-        C: Fn(PlayerId) -> T,
+        C: FnOnce(PlayerId) -> T,
         T: Player + 'static,
     {
         let mut state = GameState {
@@ -64,7 +64,7 @@ impl GameState {
 
     fn add_player<C, T>(&mut self, player_constructor: C)
     where
-        C: Fn(PlayerId) -> T,
+        C: FnOnce(PlayerId) -> T,
         T: Player + 'static,
     {
         let id = self.players.len() as PlayerId;

@@ -3,4 +3,6 @@
 members = [
     "royals_core",
     "royals_ui_cli",
+    "royals_ui_bevy",
 ]
+resolver = "2"
