@@ -74,12 +74,11 @@ impl GameState {
 
     fn valid_actions(&self) -> Vec<Action> {
         let mut actions = vec![Action::GiveUp];
-        let mut first_card:Option<Card> = None;
+        let mut first_card: Option<Card> = None;
 
         for card in self.players[self.players_turn].hand() {
-
             // avoid dublicate entries
-            if first_card.is_none(){
+            if first_card.is_none() {
                 first_card = Some(card.clone());
             } else if first_card.unwrap() == *card {
                 break;

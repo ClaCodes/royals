@@ -6,3 +6,7 @@ members = [
     "royals_ui_bevy",
 ]
 resolver = "2"
+
+[workspace.dependencies]
+rustfmt = "1.5.1"
+clippy = "1.68.0"

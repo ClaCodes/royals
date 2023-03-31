@@ -1,0 +1,38 @@
+name: check-code
+run-name: Check code for formatting and lint
+on: [push]
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    container:
+      image: rust_alpine
+    steps:
+      - name: Format
+        run: cargo fmt --check
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: rust_alpine
+    steps:
+      - name: Lint
+        run: cargo clippy
+  build_ci:
+    needs: [lint, format]
+    runs-on: ubuntu-latest
+    container:
+      image: rust_alpine
+    steps:
+      - name: Lint
+        run: |
+          cd royals_ui_cli
+          cargo build
+  build_bevy:
+    needs: [lint, format]
+    runs-on: ubuntu-latest
+    container:
+      image: rust_alpine
+    steps:
+      - name: Lint
+        run: |
+          cd royals_ui_bevy
+          cargo build
