@@ -34,7 +34,7 @@ pub trait Player {
     }
 
     fn protected(&self) -> bool {
-        self.data().protected.clone()
+        self.data().protected
     }
 
     fn set_protected(&mut self, value: bool) {

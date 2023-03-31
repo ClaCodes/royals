@@ -9,10 +9,9 @@ impl<T> VecExtensions<T> for Vec<T> {
     where
         F: Fn(&T) -> bool,
     {
-        match self.iter().position(predicate) {
-            Some(index) => Some(self.remove(index)),
-            None => None,
-        }
+        self.iter()
+            .position(predicate)
+            .map(|index| self.remove(index))
     }
 }
 
@@ -23,7 +22,7 @@ pub trait SliceExtensions<T> {
 impl<T> SliceExtensions<T> for [T] {
     fn single_element(&self) -> Option<&T> {
         match self.len() {
-            1 => self.into_iter().next(),
+            1 => self.iter().next(),
             _ => None,
         }
     }

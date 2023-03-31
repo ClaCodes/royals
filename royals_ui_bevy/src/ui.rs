@@ -83,7 +83,7 @@ pub fn ui_system(
         });
 }
 
-fn event_to_string(event: &event::Event, players: &Vec<String>) -> String {
+fn event_to_string(event: &event::Event, players: &[String]) -> String {
     match event {
         event::Event::Play(id, play) => format!("{} plays {:?}", players[*id], play),
         event::Event::Fold(id, card, _s) => format!("{} folds {:?}", players[*id], card),
@@ -109,21 +109,21 @@ fn event_to_string(event: &event::Event, players: &Vec<String>) -> String {
     }
 }
 
-fn action_to_string(action: &Action, players: &Vec<String>) -> String {
+fn action_to_string(action: &Action, players: &[String]) -> String {
     match action {
         Action::GiveUp => "Give up".to_string(),
         Action::Play(play) => play_to_string(play, players),
     }
 }
 
-fn play_to_string(play: &Play, players: &Vec<String>) -> String {
+fn play_to_string(play: &Play, players: &[String]) -> String {
     [
-        format!("Play card {}", play.card.to_string()),
+        format!("Play card {}", play.card),
         play.opponent
             .map(|oponent_id| format!(" targeting player {}", players[oponent_id].clone()))
             .unwrap_or("".to_string()),
         play.guess
-            .map(|card| format!(" guessing card {}", card.to_string()))
+            .map(|card| format!(" guessing card {}", card))
             .unwrap_or("".to_string()),
     ]
     .concat()

@@ -29,7 +29,7 @@ fn format_play(play: &Play, players: &[&String]) -> String {
     let guess_str = play.guess.map(|g| format!("\tGuess: {g}"));
     format!(
         "{}{}{}",
-        play.card.to_string(),
+        play.card,
         op_str.unwrap_or_default(),
         guess_str.unwrap_or_default()
     )
@@ -42,13 +42,13 @@ pub struct CliPlayer {
 impl CliPlayer {
     fn query_user(&self, actions: &[Action], players: &[&String]) -> usize {
         loop {
-            println!("- [{}]:\t{}", "r", "display rules");
-            println!("- [{}]:\t{}", "c", "display card effects");
+            println!("- [r]:\tdisplay rules");
+            println!("- [c]:\tdisplay card effects");
             for (i, a) in actions.iter().enumerate() {
                 match a {
-                    Action::GiveUp => println!("- [{}]:\t{}", i.to_string(), "give up"),
+                    Action::GiveUp => println!("- [{}]:\tgive up", i,),
                     Action::Play(p) => {
-                        println!("- [{}]:\t{}", i.to_string(), format_play(p, players))
+                        println!("- [{}]:\t{}", i, format_play(p, players))
                     }
                 }
             }
@@ -59,7 +59,7 @@ impl CliPlayer {
                     "r" => println!("{}", RULES),
                     "c" => println!("{}", Card::rules()),
                     s => {
-                        if let Ok(p) = usize::from_str(&s) {
+                        if let Ok(p) = usize::from_str(s) {
                             return p;
                         }
                     }
@@ -78,17 +78,13 @@ impl CliPlayer {
             Event::DropOut(pl) => println!("~ DropOut:\t{}\n", players[*pl]),
             Event::Fold(pl, c, reason) => println!(
                 "~ Fold:\t\t{} folded {}, because {}\n",
-                players[*pl],
-                c.to_string(),
-                reason
+                players[*pl], c, reason
             ),
             Event::PickUp(pl, c, s) => {
                 if let Some(card) = c {
                     println!(
                         "~ PickUp:\t{} picked up {} , {} cards remaining in deck\n",
-                        players[*pl],
-                        card.to_string(),
-                        s
+                        players[*pl], card, s
                     );
                 } else {
                     println!(
@@ -99,11 +95,7 @@ impl CliPlayer {
             }
             Event::LearnedCard(pl, c) => {
                 if let Some(card) = c {
-                    println!(
-                        "~ LearnedCard:\t{} has card {}\n",
-                        players[*pl],
-                        card.to_string()
-                    );
+                    println!("~ LearnedCard:\t{} has card {}\n", players[*pl], card);
                 } else {
                     println!("~ LearnedCard:\t{} has card ***\n", players[*pl]);
                 }
