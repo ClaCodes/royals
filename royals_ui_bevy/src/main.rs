@@ -41,7 +41,7 @@ pub struct GameState {
 
 fn start_game_thread(sender: Sender<GameEvent>, receiver: Receiver<usize>) {
     thread::spawn(move || {
-        run_game(move |id| BevyPlayer::new(id, sender, receiver));
+        run_game(move || BevyPlayer::new(sender, receiver));
     });
 }
 
