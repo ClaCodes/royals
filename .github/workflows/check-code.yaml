@@ -5,14 +5,14 @@ jobs:
   format:
     runs-on: ubuntu-latest
     container:
-      image: rust_alpine
+      image: rust:alpine
     steps:
       - name: Format
         run: cargo fmt --check
   lint:
     runs-on: ubuntu-latest
     container:
-      image: rust_alpine
+      image: rust:alpine
     steps:
       - name: Lint
         run: cargo clippy
@@ -20,7 +20,7 @@ jobs:
     needs: [lint, format]
     runs-on: ubuntu-latest
     container:
-      image: rust_alpine
+      image: rust:alpine
     steps:
       - name: Lint
         run: |
@@ -30,7 +30,7 @@ jobs:
     needs: [lint, format]
     runs-on: ubuntu-latest
     container:
-      image: rust_alpine
+      image: rust:alpine
     steps:
       - name: Lint
         run: |
