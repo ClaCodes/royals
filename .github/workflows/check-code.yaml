@@ -31,6 +31,8 @@ jobs:
       image: rust:alpine
     steps:
       - uses: actions/checkout@v3
+      - name: Prerequisites
+        run: apk add --no-cache musl-dev pkgconfig alsa-lib-dev eudev-dev
       - name: Build cli
         run: |
           cd royals_ui_cli
@@ -42,6 +44,8 @@ jobs:
       image: rust:alpine
     steps:
       - uses: actions/checkout@v3
+      - name: Prerequisites
+        run: apk add --no-cache musl-dev pkgconfig alsa-lib-dev eudev-dev
       - name: Build bevy
         run: |
           cd royals_ui_bevy
