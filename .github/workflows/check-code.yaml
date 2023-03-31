@@ -7,6 +7,8 @@ jobs:
     container:
       image: rust:alpine
     steps:
+      - name: Install
+        run: rustup component add rustfmt
       - name: Format
         run: cargo fmt --check
   lint:
@@ -14,6 +16,8 @@ jobs:
     container:
       image: rust:alpine
     steps:
+      - name: Install
+        run: rustup component add clippy
       - name: Lint
         run: cargo clippy
   build_ci:
