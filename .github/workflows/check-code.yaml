@@ -7,6 +7,7 @@ jobs:
     container:
       image: rust:alpine
     steps:
+      - uses: actions/checkout@v3
       - name: Install
         run: rustup component add rustfmt
       - name: Format
@@ -16,6 +17,7 @@ jobs:
     container:
       image: rust:alpine
     steps:
+      - uses: actions/checkout@v3
       - name: Install
         run: rustup component add clippy
       - name: Lint
@@ -26,7 +28,8 @@ jobs:
     container:
       image: rust:alpine
     steps:
-      - name: Lint
+      - uses: actions/checkout@v3
+      - name: Build cli
         run: |
           cd royals_ui_cli
           cargo build
@@ -36,7 +39,8 @@ jobs:
     container:
       image: rust:alpine
     steps:
-      - name: Lint
+      - uses: actions/checkout@v3
+      - name: Build bevy
         run: |
           cd royals_ui_bevy
           cargo build
