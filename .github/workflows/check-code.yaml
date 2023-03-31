@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Prerequisites
-        run: apk add --no-cache musl-dev
+        run: apk add --no-cache musl-dev pkgconfig
       - name: Install
         run: rustup component add clippy
       - name: Lint
