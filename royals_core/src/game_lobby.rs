@@ -77,9 +77,9 @@ impl GameLobby {
 
             state.handle_action(chosen_action, &deck, &mut game_log);
 
-            for p in &self.players {
+            for (i, p) in self.players.iter().enumerate() {
                 p.notify(
-                    &GameLobby::filter_event(&game_log, None),
+                    &GameLobby::filter_event(&game_log, Some(i)),
                     &self.player_names(),
                 );
             }

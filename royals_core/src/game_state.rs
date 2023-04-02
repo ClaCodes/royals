@@ -146,10 +146,15 @@ impl GameState {
                 }
             }
         }
+
         log.push(EventEntry {
             visibility: EventVisibility::Public,
             event: Event::Winner(best_players),
         });
+
+        for e in log {
+            e.visibility = EventVisibility::Public;
+        }
     }
 
     fn active_players(&self) -> HashSet<PlayerId> {
