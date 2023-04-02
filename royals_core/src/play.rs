@@ -7,6 +7,8 @@ pub struct Play {
     pub guess: Option<Card>,
 }
 
+pub type ActionId = usize;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
     GiveUp,

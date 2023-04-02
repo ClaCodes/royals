@@ -4,7 +4,7 @@ use crate::{
     event::EventEntry,
     event::EventVisibility,
     game_state::GameState,
-    play::Action,
+    play::ActionId,
     player::{Player, PlayerId},
 };
 
@@ -32,76 +32,57 @@ impl GameLobby {
         self.players.iter().map(|p| p.name()).collect::<Vec<_>>()
     }
 
-    pub fn play_round(&mut self) {
-        let mut deck_to_shuffle = Card::deck();
-        deck_to_shuffle.shuffle(&mut rand::thread_rng());
-        let deck = deck_to_shuffle;
-        self.players.shuffle(&mut rand::thread_rng());
-        let mut state = GameState::new(self.players.len());
-
-        for i in 0..self.players.len() {
-            state.pick_up_card(i, &deck);
-        }
-
-        let mut ok = true;
-        let mut running = true;
-
-        while running {
-            if ok {
-                state.pick_up_card(state.players_turn, &deck);
-            }
-            let actions = state.valid_actions();
-            let chosen_action_index = self.players[state.players_turn].obtain_action(
-                &self.player_names(),
-                &state.filter_event(),
-                &actions,
-            );
-            ok = chosen_action_index < actions.len();
-            if ok {
-                match &actions[chosen_action_index] {
-                    Action::GiveUp => {
-                        state.drop_player(state.players_turn, "Player gave up".to_string());
-                        running = state.next_player_turn(&deck);
-                    }
-                    Action::Play(p) => {
-                        if ok {
-                            state.handle_play(p, &deck);
-                            running = state.next_player_turn(&deck);
+    fn filter_event(log: &[EventEntry], visible_to: Option<PlayerId>) -> Vec<Event> {
+        log.iter()
+            .map(|e| match e.visibility {
+                EventVisibility::Public => e.event.clone(),
+                EventVisibility::Private(player) => {
+                    if visible_to.is_none() || player == visible_to.unwrap() {
+                        e.event.clone()
+                    } else {
+                        match e.event {
+                            Event::PickUp(p, _, s) => Event::PickUp(p, None, s),
+                            Event::LearnedCard(p, _) => Event::LearnedCard(p, None),
+                            _ => e.event.clone(),
                         }
                     }
                 }
+            })
+            .collect()
+    }
+
+    pub fn play_round(&mut self) {
+        let mut game_log: Vec<EventEntry> = vec![];
+
+        let mut deck_to_shuffle = Card::deck();
+        deck_to_shuffle.shuffle(&mut rand::thread_rng());
+        let deck = deck_to_shuffle;
+
+        self.players.shuffle(&mut rand::thread_rng());
+
+        let mut state = GameState::new(self.players.len(), &deck, &mut game_log);
+
+        loop {
+            let (players_turn, actions) = state.valid_actions();
+
+            if players_turn.is_none() {
+                break;
             }
-        }
-        for mut p in &mut state.game_log {
-            p.visibility = EventVisibility::Public;
-        }
-        let mut best_players: Vec<PlayerId> = vec![];
-        let mut best_card: Option<Card> = None;
-        for (i, p) in state.players.iter().enumerate() {
-            if let Some(player_card) = p.hand().get(0) {
-                state.game_log.push(EventEntry {
-                    visibility: EventVisibility::Public,
-                    event: Event::Fold(i, player_card.clone(), "game is finished".to_string()),
-                });
-                if let Some(card) = best_card {
-                    if card < *player_card {
-                        best_players = vec![i];
-                        best_card = Some(player_card.clone());
-                    } else if card == *player_card {
-                        best_players.push(i);
-                    }
-                } else {
-                    best_players = vec![i];
-                    best_card = Some(player_card.clone());
-                }
+
+            let chosen_action: ActionId = self.players[players_turn.unwrap()].obtain_action(
+                &self.player_names(),
+                &GameLobby::filter_event(&game_log, players_turn),
+                &actions,
+            );
+
+            state.handle_action(chosen_action, &deck, &mut game_log);
+
+            for p in &self.players {
+                p.notify(
+                    &GameLobby::filter_event(&game_log, None),
+                    &self.player_names(),
+                );
             }
-        }
-        state.game_log.push(EventEntry {
-            visibility: EventVisibility::Public,
-            event: Event::Winner(best_players),
-        });
-        for p in &self.players {
-            p.notify(&state.filter_event(), &self.player_names());
         }
     }
 }
