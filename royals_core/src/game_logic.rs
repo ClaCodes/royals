@@ -10,69 +10,7 @@ use crate::{
 };
 
 impl GameState {
-    pub fn run(&mut self) {
-        let mut ok = true;
-        let mut running = true;
-        while running {
-            if ok {
-                self.pick_up_card(self.players_turn);
-            }
-            let actions = self.valid_actions();
-            let chosen_action_index = self.players[self.players_turn].obtain_action(
-                &self.player_names(),
-                &self.filter_event(),
-                &actions,
-            );
-            ok = chosen_action_index < actions.len();
-            if ok {
-                match &actions[chosen_action_index] {
-                    Action::GiveUp => {
-                        self.drop_player(self.players_turn, "Player gave up".to_string());
-                        running = self.next_player_turn();
-                    }
-                    Action::Play(p) => {
-                        if ok {
-                            self.handle_play(p);
-                            running = self.next_player_turn();
-                        }
-                    }
-                }
-            }
-        }
-        for mut p in &mut self.game_log {
-            p.visibility = EventVisibility::Public;
-        }
-        let mut best_players: Vec<PlayerId> = vec![];
-        let mut best_card: Option<Card> = None;
-        for (i, p) in self.players.iter().enumerate() {
-            if let Some(player_card) = p.hand().get(0) {
-                self.game_log.push(EventEntry {
-                    visibility: EventVisibility::Public,
-                    event: Event::Fold(i, *player_card, "game is finished".to_string()),
-                });
-                if let Some(card) = best_card {
-                    if card < *player_card {
-                        best_players = vec![i];
-                        best_card = Some(*player_card);
-                    } else if card == *player_card {
-                        best_players.push(i);
-                    }
-                } else {
-                    best_players = vec![i];
-                    best_card = Some(*player_card);
-                }
-            }
-        }
-        self.game_log.push(EventEntry {
-            visibility: EventVisibility::Public,
-            event: Event::Winner(best_players),
-        });
-        for p in &self.players {
-            p.notify(&self.filter_event(), &self.player_names());
-        }
-    }
-
-    fn valid_actions(&self) -> Vec<Action> {
+    pub fn valid_actions(&self) -> Vec<Action> {
         let mut actions = vec![Action::GiveUp];
         let mut first_card: Option<Card> = None;
 
@@ -110,7 +48,7 @@ impl GameState {
             .collect_vec()
     }
 
-    fn filter_event(&self) -> Vec<Event> {
+    pub fn filter_event(&self) -> Vec<Event> {
         let mut events = vec![];
         for e in &self.game_log {
             match e.visibility {
@@ -131,16 +69,17 @@ impl GameState {
         events
     }
 
-    pub fn pick_up_card(&mut self, player_id: PlayerId) {
-        let next_card = self.deck.pop().unwrap();
+    pub fn pick_up_card(&mut self, player_id: PlayerId, deck: &[Card]) {
+        let next_card = deck[self.deck_head];
+        self.deck_head += 1;
         self.game_log.push(EventEntry {
             visibility: EventVisibility::Private(player_id),
-            event: Event::PickUp(player_id, Some(next_card), self.deck.len()),
+            event: Event::PickUp(player_id, Some(next_card), deck.len() - self.deck_head),
         });
         self.players[player_id].hand_mut().push(next_card);
     }
 
-    fn drop_player(&mut self, player_id: PlayerId, reason: String) {
+    pub fn drop_player(&mut self, player_id: PlayerId, reason: String) {
         while let Some(op_card) = self.players[player_id].hand_mut().pop() {
             self.game_log.push(EventEntry {
                 visibility: EventVisibility::Public,
@@ -153,13 +92,13 @@ impl GameState {
         });
     }
 
-    fn next_player_turn(&mut self) -> bool {
+    pub fn next_player_turn(&mut self, deck: &[Card]) -> bool {
         self.players_turn = (self.players_turn + 1) % self.players.len();
         while !self.players[self.players_turn].is_active() {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
         // last card is ussually not used
-        self.deck.len() > 1 && self.active_players().len() > 1
+        deck.len() - self.deck_head > 1 && self.active_players().len() > 1
     }
 
     fn is_valid(&self, action: &Action) -> bool {
@@ -208,7 +147,7 @@ impl GameState {
         }
     }
 
-    fn handle_play(&mut self, p: &Play) {
+    pub fn handle_play(&mut self, p: &Play, deck: &[Card]) {
         let card = self.players[self.players_turn]
             .hand_mut()
             .remove_first_where(|&card| card == p.card)
@@ -274,7 +213,7 @@ impl GameState {
                                 "opponent has played prince to force it".to_string(),
                             ),
                         });
-                        self.pick_up_card(op);
+                        self.pick_up_card(op, deck);
                     }
                 }
             }
