@@ -75,7 +75,7 @@ impl GameLobby {
                 &actions,
             );
 
-            state.handle_action(chosen_action, &deck, &mut game_log);
+            state.handle_action(chosen_action, &mut game_log);
 
             for (i, p) in self.players.iter().enumerate() {
                 p.notify(

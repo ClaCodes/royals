@@ -42,26 +42,28 @@ impl PlayerState {
     }
 }
 
-pub struct GameState {
+pub struct GameState<'a> {
     players: Vec<PlayerState>,
     deck_head: usize,
     players_turn: PlayerId,
     game_over: bool,
+    deck: &'a[Card],
 }
 
-impl GameState {
-    pub fn new(player_count: usize, deck: &[Card], log: &mut Vec<EventEntry>) -> Self {
+impl <'a>GameState<'a> {
+    pub fn new(player_count: usize, deck: &'a[Card], log: &mut Vec<EventEntry>) -> Self {
         let mut state = GameState {
             players: vec![],
             deck_head: 0,
             players_turn: 0,
             game_over: false,
+            deck,
         };
         for i in 0..player_count {
             state.players.push(PlayerState::new());
-            state.pick_up_card(i, &deck, log);
+            state.pick_up_card(i, log);
         }
-        state.pick_up_card(state.players_turn, &deck, log);
+        state.pick_up_card(state.players_turn, log);
         state
     }
 
@@ -109,7 +111,7 @@ impl GameState {
         )
     }
 
-    pub fn handle_action(&mut self, action: ActionId, deck: &[Card], log: &mut Vec<EventEntry>) {
+    pub fn handle_action(&mut self, action: ActionId, log: &mut Vec<EventEntry>) {
         let (_, actions) = self.valid_actions();
         if action < actions.len() {
             match &actions[action] {
@@ -117,10 +119,10 @@ impl GameState {
                     self.drop_player(self.players_turn, "Player gave up".to_string(), log);
                 }
                 Action::Play(p) => {
-                    self.handle_play(p, &deck, log);
+                    self.handle_play(p, log);
                 }
             }
-            self.next_player_turn(&deck, log);
+            self.next_player_turn(log);
         }
     }
 
@@ -188,15 +190,15 @@ impl GameState {
             .all(|&id| self.players[id].protected())
     }
 
-    fn pick_up_card(&mut self, player_id: PlayerId, deck: &[Card], log: &mut Vec<EventEntry>) {
-        let next_card = deck[self.deck_head];
+    fn pick_up_card(&mut self, player_id: PlayerId, log: &mut Vec<EventEntry>) {
+        let next_card = self.deck[self.deck_head];
         self.deck_head += 1;
         log.push(EventEntry {
             visibility: EventVisibility::Private(player_id),
             event: Event::PickUp(
                 player_id,
                 Some(next_card.clone()),
-                deck.len() - self.deck_head,
+                self.deck.len() - self.deck_head,
             ),
         });
         self.players[player_id].hand_mut().push(next_card);
@@ -215,15 +217,15 @@ impl GameState {
         });
     }
 
-    fn next_player_turn(&mut self, deck: &[Card], log: &mut Vec<EventEntry>) {
+    fn next_player_turn(&mut self, log: &mut Vec<EventEntry>) {
         self.players_turn = (self.players_turn + 1) % self.players.len();
         while !self.players[self.players_turn].is_active() {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
         // last card is ussually not used
-        self.game_over = !(deck.len() - self.deck_head > 1 && self.active_players().len() > 1);
+        self.game_over = !(self.deck.len() - self.deck_head > 1 && self.active_players().len() > 1);
         if !self.game_over {
-            self.pick_up_card(self.players_turn, &deck, log);
+            self.pick_up_card(self.players_turn, log);
         } else {
             self.wrap_up_round(log);
         }
@@ -280,7 +282,7 @@ impl GameState {
         }
     }
 
-    fn handle_play(&mut self, p: &Play, deck: &[Card], log: &mut Vec<EventEntry>) {
+    fn handle_play(&mut self, p: &Play, log: &mut Vec<EventEntry>) {
         let card = self.players[self.players_turn]
             .hand_mut()
             .remove_first_where(|&card| card == p.card)
@@ -351,7 +353,7 @@ impl GameState {
                                 "opponent has played prince to force it".to_string(),
                             ),
                         });
-                        self.pick_up_card(op, deck, log);
+                        self.pick_up_card(op, log);
                     }
                 }
             }
@@ -381,7 +383,9 @@ mod tests {
 
     #[test]
     fn active_players_should_return_player_ids_with_non_empty_hand() {
+        let deck = &Card::deck();
         let state = GameState {
+            deck,
             players: vec![
                 PlayerState {
                     protected: false,
@@ -402,7 +406,9 @@ mod tests {
 
     #[test]
     fn other_players_should_return_ids_of_others() {
+        let deck = &Card::deck();
         let state = GameState {
+            deck,
             players: vec![
                 PlayerState {
                     protected: false,
@@ -427,7 +433,9 @@ mod tests {
 
     #[test]
     fn all_protected_should_return_true_if_no_other_active_player_is_unprotected() {
+        let deck = &Card::deck();
         let state = GameState {
+            deck,
             players: vec![
                 PlayerState {
                     protected: false,
@@ -452,7 +460,9 @@ mod tests {
 
     #[test]
     fn all_protected_should_return_false_if_at_least_one_other_active_player_is_unprotected() {
+        let deck = &Card::deck();
         let state = GameState {
+            deck,
             players: vec![
                 PlayerState {
                     protected: false,
