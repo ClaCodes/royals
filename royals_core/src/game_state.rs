@@ -47,7 +47,6 @@ pub struct GameState<'a> {
     players: Vec<PlayerState>,
     deck_head: usize,
     players_turn: PlayerId,
-    game_over: bool,
     deck: &'a [Card],
 }
 
@@ -57,7 +56,6 @@ impl<'a> GameState<'a> {
             players: vec![],
             deck_head: 0,
             players_turn: 0,
-            game_over: false,
             deck,
         };
         for i in 0..player_count {
@@ -119,7 +117,7 @@ impl<'a> GameState<'a> {
     }
 
     fn is_valid(&self, action: &Action) -> bool {
-        if self.game_over {
+        if self.game_over() {
             return false;
         }
         match action {
@@ -203,6 +201,11 @@ impl<'a> GameState<'a> {
             .all(|&id| self.players[id].protected())
     }
 
+    fn game_over(&self) -> bool {
+        // last card is ussually not used
+        self.deck.len() - self.deck_head <= 1 || self.active_players().len() <= 1
+    }
+
     fn pick_up_card(&mut self, player_id: PlayerId, log: &mut Vec<EventEntry>) {
         let next_card = self.deck[self.deck_head];
         self.deck_head += 1;
@@ -235,9 +238,7 @@ impl<'a> GameState<'a> {
         while !self.players[self.players_turn].is_active() {
             self.players_turn = (self.players_turn + 1) % self.players.len();
         }
-        // last card is ussually not used
-        self.game_over = !(self.deck.len() - self.deck_head > 1 && self.active_players().len() > 1);
-        if !self.game_over {
+        if !self.game_over() {
             self.pick_up_card(self.players_turn, log);
         } else {
             self.wrap_up_round(log);
@@ -385,7 +386,6 @@ mod tests {
             ],
             deck_head: 0,
             players_turn: 0,
-            game_over: false,
         };
 
         assert_eq!(state.active_players(), HashSet::from([1]));
@@ -412,7 +412,6 @@ mod tests {
             ],
             deck_head: 0,
             players_turn: 1, // second player turn
-            game_over: false,
         };
 
         assert_eq!(state.other_players(), HashSet::from([0, 2]));
@@ -439,7 +438,6 @@ mod tests {
             ],
             deck_head: 0,
             players_turn: 1, // second players turn
-            game_over: false,
         };
 
         assert_eq!(state.all_protected(), true);
@@ -470,7 +468,6 @@ mod tests {
             ],
             deck_head: 0,
             players_turn: 1, // second players turn
-            game_over: false,
         };
 
         assert_eq!(state.all_protected(), false);
