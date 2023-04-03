@@ -119,8 +119,6 @@ jobs:
     needs: [lint, format]
     runs-on: ubuntu-latest
     steps:
-      - name: Prerequisites
-        run: apk add --no-cache musl-dev pkgconfig alsa-lib-dev eudev-dev
       - uses: actions/checkout@v3
       - name: Setup Rust
         run: |
