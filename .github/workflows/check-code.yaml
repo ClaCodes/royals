@@ -91,7 +91,7 @@ jobs:
   #         cargo audit
   #         cargo pants
   build_ci:
-    needs: [lint, format, dependency_check]
+    needs: [lint, format]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -116,7 +116,7 @@ jobs:
           cd royals_ui_cli
           cargo build
   build_bevy:
-    needs: [lint, format, dependency_check]
+    needs: [lint, format]
     runs-on: ubuntu-latest
     steps:
       - name: Prerequisites
