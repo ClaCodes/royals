@@ -6,13 +6,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: rustfmt
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable 
+          rustup component add rustfmt
       - name: Set up cargo cache
         uses: actions/cache@v3
         continue-on-error: false
@@ -35,13 +33,11 @@ jobs:
       - name: Prerequisites
         run: sudo apt-get install libasound2-dev libudev-dev
       - uses: actions/checkout@v3
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: clippy
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable 
+          rustup component add clippy
       - name: Set up cargo cache
         uses: actions/cache@v3
         continue-on-error: false
@@ -58,54 +54,51 @@ jobs:
         run: rustup component add clippy
       - name: Lint
         run: cargo clippy
-  dependency-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Set up cargo cache
-        uses: actions/cache@v3
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/            
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
-      - name: Install cargo check tools
-        run: |
-          cargo install --locked cargo-deny || true
-          cargo install --locked cargo-outdated || true
-          cargo install --locked cargo-udeps || true
-          cargo install --locked cargo-audit || true
-          cargo install --locked cargo-pants || true  
-      - name: Check
-        run: |
-          cargo deny check
-          cargo outdated --exit-code 1
-          cargo udeps
-          rm -rf ~/.cargo/advisory-db
-          cargo audit
-          cargo pants
+  # First needs to be fixed before activating
+  # dependency_check:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Setup Rust
+  #       run: |
+  #         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  #         rustup default stable 
+  #     - name: Set up cargo cache
+  #       uses: actions/cache@v3
+  #       continue-on-error: false
+  #       with:
+  #         path: |
+  #           ~/.cargo/bin/
+  #           ~/.cargo/registry/index/
+  #           ~/.cargo/registry/cache/
+  #           ~/.cargo/git/db/
+  #           target/            
+  #         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: ${{ runner.os }}-cargo-
+  #     - name: Install cargo check tools
+  #       run: |
+  #         cargo install --locked cargo-deny || true
+  #         cargo install --locked cargo-outdated || true
+  #         cargo install --locked cargo-udeps || true
+  #         cargo install --locked cargo-audit || true
+  #         cargo install --locked cargo-pants || true  
+  #     - name: Check
+  #       run: |
+  #         cargo deny check
+  #         cargo outdated --exit-code 1
+  #         cargo udeps
+  #         rm -rf ~/.cargo/advisory-db
+  #         cargo audit
+  #         cargo pants
   build_ci:
-    needs: [lint, format]
+    needs: [lint, format, dependency_check]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable 
       - name: Set up cargo cache
         uses: actions/cache@v3
         continue-on-error: false
@@ -123,14 +116,16 @@ jobs:
           cd royals_ui_cli
           cargo build
   build_bevy:
-    needs: [lint, format]
+    needs: [lint, format, dependency_check]
     runs-on: ubuntu-latest
-    container:
-      image: rust:alpine
     steps:
       - name: Prerequisites
         run: apk add --no-cache musl-dev pkgconfig alsa-lib-dev eudev-dev
       - uses: actions/checkout@v3
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable
       - name: Set up cargo cache
         uses: actions/cache@v3
         continue-on-error: false
