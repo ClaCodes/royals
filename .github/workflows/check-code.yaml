@@ -94,6 +94,8 @@ jobs:
     needs: [lint, format]
     runs-on: ubuntu-latest
     steps:
+      - name: Prerequisites
+        run: sudo apt-get install libasound2-dev libudev-dev
       - uses: actions/checkout@v3
       - name: Setup Rust
         run: |
