@@ -1,0 +1,144 @@
+name: check-code
+run-name: Check code for formatting and lint
+on: [push]
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable 
+          rustup component add rustfmt
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/            
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - name: Install
+        run: rustup component add rustfmt
+      - name: Format
+        run: cargo fmt --check
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prerequisites
+        run: sudo apt-get install libasound2-dev libudev-dev
+      - uses: actions/checkout@v3
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable 
+          rustup component add clippy
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/            
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - name: Install
+        run: rustup component add clippy
+      - name: Lint
+        run: cargo clippy
+  # First needs to be fixed before activating
+  # dependency_check:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Setup Rust
+  #       run: |
+  #         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  #         rustup default stable 
+  #     - name: Set up cargo cache
+  #       uses: actions/cache@v3
+  #       continue-on-error: false
+  #       with:
+  #         path: |
+  #           ~/.cargo/bin/
+  #           ~/.cargo/registry/index/
+  #           ~/.cargo/registry/cache/
+  #           ~/.cargo/git/db/
+  #           target/            
+  #         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: ${{ runner.os }}-cargo-
+  #     - name: Install cargo check tools
+  #       run: |
+  #         cargo install --locked cargo-deny || true
+  #         cargo install --locked cargo-outdated || true
+  #         cargo install --locked cargo-udeps || true
+  #         cargo install --locked cargo-audit || true
+  #         cargo install --locked cargo-pants || true  
+  #     - name: Check
+  #       run: |
+  #         cargo deny check
+  #         cargo outdated --exit-code 1
+  #         cargo udeps
+  #         rm -rf ~/.cargo/advisory-db
+  #         cargo audit
+  #         cargo pants
+  build_ci:
+    needs: [lint, format]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable 
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/            
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - name: Build cli
+        run: |
+          cd royals_ui_cli
+          cargo build
+  build_bevy:
+    needs: [lint, format]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prerequisites
+        run: sudo apt-get install libasound2-dev libudev-dev
+      - uses: actions/checkout@v3
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          rustup default stable
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/            
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - name: Build bevy
+        run: |
+          cd royals_ui_bevy
+          cargo build

@@ -48,18 +48,18 @@ impl GameState {
             if let Some(player_card) = p.hand().get(0) {
                 self.game_log.push(EventEntry {
                     visibility: EventVisibility::Public,
-                    event: Event::Fold(i, player_card.clone(), "game is finished".to_string()),
+                    event: Event::Fold(i, *player_card, "game is finished".to_string()),
                 });
                 if let Some(card) = best_card {
                     if card < *player_card {
                         best_players = vec![i];
-                        best_card = Some(player_card.clone());
+                        best_card = Some(*player_card);
                     } else if card == *player_card {
                         best_players.push(i);
                     }
                 } else {
                     best_players = vec![i];
-                    best_card = Some(player_card.clone());
+                    best_card = Some(*player_card);
                 }
             }
         }
@@ -74,13 +74,12 @@ impl GameState {
 
     fn valid_actions(&self) -> Vec<Action> {
         let mut actions = vec![Action::GiveUp];
-        let mut first_card:Option<Card> = None;
+        let mut first_card: Option<Card> = None;
 
         for card in self.players[self.players_turn].hand() {
-
             // avoid dublicate entries
-            if first_card.is_none(){
-                first_card = Some(card.clone());
+            if first_card.is_none() {
+                first_card = Some(*card);
             } else if first_card.unwrap() == *card {
                 break;
             }
@@ -136,7 +135,7 @@ impl GameState {
         let next_card = self.deck.pop().unwrap();
         self.game_log.push(EventEntry {
             visibility: EventVisibility::Private(player_id),
-            event: Event::PickUp(player_id, Some(next_card.clone()), self.deck.len()),
+            event: Event::PickUp(player_id, Some(next_card), self.deck.len()),
         });
         self.players[player_id].hand_mut().push(next_card);
     }
@@ -173,29 +172,24 @@ impl GameState {
                 if self.players[self.players_turn]
                     .hand()
                     .contains(&Card::Countess)
+                    && (play.card == Card::Prince || play.card == Card::King)
                 {
-                    if play.card == Card::Prince || play.card == Card::King {
-                        return false;
-                    }
+                    return false;
                 }
                 if !play.card.needs_opponent() {
                     if play.opponent.is_some() {
                         return false;
                     }
-                } else if !self.all_protected() {
-                    if play.opponent.is_none() {
-                        return false;
-                    }
+                } else if !self.all_protected() && play.opponent.is_none() {
+                    return false;
                 }
 
                 if !play.card.needs_guess() {
                     if play.guess.is_some() {
                         return false;
                     }
-                } else if !self.all_protected() {
-                    if play.guess.is_none() {
-                        return false;
-                    }
+                } else if !self.all_protected() && play.guess.is_none() {
+                    return false;
                 }
 
                 if let Some(op) = play.opponent {
@@ -245,7 +239,7 @@ impl GameState {
                 if let Some(op) = p.opponent {
                     self.game_log.push(EventEntry {
                         visibility: EventVisibility::Private(self.players_turn),
-                        event: Event::LearnedCard(op, Some(self.players[op].hand()[0].clone())),
+                        event: Event::LearnedCard(op, Some(self.players[op].hand()[0])),
                     });
                 }
             }

@@ -56,12 +56,12 @@ impl Card {
     }
 
     pub fn rule(&self) -> String {
-        return format!(
+        format!(
             "{} [value = {}]: {}",
-            self.to_string(),
+            self,
             self.value(),
             self.get_message().unwrap_or("No rule")
-        );
+        )
     }
 
     fn value(&self) -> u8 {
