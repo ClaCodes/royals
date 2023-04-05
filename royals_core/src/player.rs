@@ -3,16 +3,14 @@ use crate::{card::Card, play::Action, Event};
 pub type PlayerId = usize;
 
 pub struct PlayerData {
-    id: PlayerId,
     name: String,
     protected: bool,
     hand: Vec<Card>,
 }
 
 impl PlayerData {
-    pub fn new(id: PlayerId, name: String) -> Self {
+    pub fn new(name: String) -> Self {
         PlayerData {
-            id,
             name,
             protected: false,
             hand: vec![],
@@ -24,10 +22,6 @@ pub trait Player {
     fn data(&self) -> &PlayerData;
 
     fn data_mut(&mut self) -> &mut PlayerData;
-
-    fn id(&self) -> PlayerId {
-        self.data().id
-    }
 
     fn name(&self) -> &String {
         &self.data().name

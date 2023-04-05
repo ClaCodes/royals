@@ -9,7 +9,7 @@ use royals_core::{
     card::Card,
     event::Event,
     play::{Action, Play},
-    player::{Player, PlayerData, PlayerId},
+    player::{Player, PlayerData},
 };
 
 static RULES: &str = "
@@ -109,7 +109,7 @@ impl CliPlayer {
 }
 
 impl CliPlayer {
-    pub fn new(id: PlayerId) -> CliPlayer {
+    pub fn new() -> CliPlayer {
         print!("Please Enter Name: ");
         io::stdout().flush().unwrap();
 
@@ -119,7 +119,7 @@ impl CliPlayer {
         };
 
         CliPlayer {
-            data: PlayerData::new(id, name),
+            data: PlayerData::new(name),
         }
     }
 }

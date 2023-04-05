@@ -3,7 +3,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use royals_core::{
     event::Event,
     play::Action,
-    player::{Player, PlayerData, PlayerId},
+    player::{Player, PlayerData},
 };
 
 use crate::{
@@ -18,9 +18,9 @@ pub struct BevyPlayer {
 }
 
 impl BevyPlayer {
-    pub fn new(id: PlayerId, sender: Sender<GameEvent>, receiver: Receiver<usize>) -> Self {
+    pub fn new(sender: Sender<GameEvent>, receiver: Receiver<usize>) -> Self {
         BevyPlayer {
-            data: PlayerData::new(id, "Bevy player".to_string()),
+            data: PlayerData::new("Bevy player".to_string()),
             sender,
             receiver,
         }

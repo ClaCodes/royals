@@ -1,6 +1,6 @@
 use event::Event;
 use game_state::GameState;
-use player::{Player, PlayerId};
+use player::Player;
 
 pub mod card;
 pub mod event;
@@ -13,7 +13,7 @@ pub mod utils;
 
 pub fn run_game<C, T>(player_constructor: C)
 where
-    C: FnOnce(PlayerId) -> T,
+    C: FnOnce() -> T,
     T: Player + 'static,
 {
     let mut game = GameState::new(player_constructor);

@@ -19,7 +19,7 @@ pub struct GameState {
 impl GameState {
     pub fn new<C, T>(player_constructor: C) -> Self
     where
-        C: FnOnce(PlayerId) -> T,
+        C: FnOnce() -> T,
         T: Player + 'static,
     {
         let mut state = GameState {
@@ -64,11 +64,10 @@ impl GameState {
 
     fn add_player<C, T>(&mut self, player_constructor: C)
     where
-        C: FnOnce(PlayerId) -> T,
+        C: FnOnce() -> T,
         T: Player + 'static,
     {
-        let id = self.players.len() as PlayerId;
-        let player = player_constructor(id);
+        let player = player_constructor();
         self.players.push(Box::new(player));
     }
 
@@ -79,15 +78,17 @@ impl GameState {
     pub fn active_players(&self) -> HashSet<PlayerId> {
         self.players
             .iter()
-            .filter(|p| p.is_active())
-            .map(|p| p.id())
+            .enumerate()
+            .filter(|&(_, p)| p.is_active())
+            .map(|(i, _)| i)
             .collect()
     }
 
     fn other_players(&self) -> HashSet<PlayerId> {
         self.players
             .iter()
-            .map(|p| p.id())
+            .enumerate()
+            .map(|(i, _)| i)
             .filter(|&id| id != self.players_turn)
             .collect()
     }
@@ -206,7 +207,7 @@ mod tests {
     impl TestPlayer {
         pub fn new(id: PlayerId, name: &str, protected: bool, hand: Vec<Card>) -> Self {
             let mut player = TestPlayer {
-                data: PlayerData::new(id, name.to_string()),
+                data: PlayerData::new(name.to_string()),
             };
             player.set_protected(protected);
             *player.hand_mut() = hand;

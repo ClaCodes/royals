@@ -1,22 +1,25 @@
 use rand::Rng;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::{
     event::Event,
     play::Action,
-    player::{Player, PlayerData, PlayerId},
+    player::{Player, PlayerData},
 };
 
 static COMPUTER_NAMES: &[&str] = &["Computer Alpha", "Computer Bravo", "Computer Charlie"];
+static COMPUTER_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 pub struct RandomPlayingComputer {
     pub data: PlayerData,
 }
 
 impl RandomPlayingComputer {
-    pub fn new(id: PlayerId) -> RandomPlayingComputer {
-        let name = COMPUTER_NAMES[id % COMPUTER_NAMES.len()].to_string();
+    pub fn new() -> RandomPlayingComputer {
+        let my_id = COMPUTER_COUNT.fetch_add(1, Ordering::Relaxed);
+        let name = COMPUTER_NAMES[my_id % COMPUTER_NAMES.len()].to_string();
         RandomPlayingComputer {
-            data: PlayerData::new(id, name),
+            data: PlayerData::new(name),
         }
     }
 }
