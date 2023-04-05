@@ -43,11 +43,15 @@ impl GameState<'_> {
     }
 
     pub fn pick_up_card(&mut self, player_id: PlayerId, log: &mut Vec<EventEntry>) {
-        let next_card = self.deck[self.deck_head];
-        self.deck_head += 1;
+        let next_card = self.deck[self.played_card_count];
+        self.played_card_count += 1;
         log.push(EventEntry {
             visibility: EventVisibility::Private(player_id),
-            event: Event::PickUp(player_id, Some(next_card), self.deck.len() - self.deck_head),
+            event: Event::PickUp(
+                player_id,
+                Some(next_card),
+                self.deck.len() - self.played_card_count,
+            ),
         });
         self.players[player_id].hand_mut().push(next_card);
     }

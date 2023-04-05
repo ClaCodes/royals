@@ -44,7 +44,7 @@ impl PlayerState {
 
 pub struct GameState<'a> {
     pub players: Vec<PlayerState>,
-    pub deck_head: usize,
+    pub played_card_count: usize,
     pub players_turn: PlayerId,
     pub deck: &'a [Card],
 }
@@ -53,7 +53,7 @@ impl<'a> GameState<'a> {
     pub fn new(player_count: usize, deck: &'a [Card], log: &mut Vec<EventEntry>) -> Self {
         let mut state = GameState {
             players: vec![],
-            deck_head: 0,
+            played_card_count: 0,
             players_turn: 0,
             deck,
         };
@@ -181,7 +181,7 @@ impl<'a> GameState<'a> {
 
     pub fn game_over(&self) -> bool {
         // last card is ussually not used
-        self.deck.len() - self.deck_head <= 1 || self.active_players().len() <= 1
+        self.deck.len() - self.played_card_count <= 1 || self.active_players().len() <= 1
     }
 }
 
@@ -206,7 +206,7 @@ mod tests {
                     hand: vec![Card::King],
                 },
             ],
-            deck_head: 0,
+            played_card_count: 0,
             players_turn: 0,
         };
 
@@ -232,7 +232,7 @@ mod tests {
                     hand: vec![],
                 },
             ],
-            deck_head: 0,
+            played_card_count: 0,
             players_turn: 1, // second player turn
         };
 
@@ -258,7 +258,7 @@ mod tests {
                     hand: vec![Card::Countess],
                 }, // protected
             ],
-            deck_head: 0,
+            played_card_count: 0,
             players_turn: 1, // second players turn
         };
 
@@ -288,7 +288,7 @@ mod tests {
                     hand: vec![Card::Guard],
                 }, // unprotected
             ],
-            deck_head: 0,
+            played_card_count: 0,
             players_turn: 1, // second players turn
         };
 
