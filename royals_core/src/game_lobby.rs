@@ -1,12 +1,4 @@
-use crate::{
-    card::Card,
-    event::Event,
-    event::EventEntry,
-    event::EventVisibility,
-    game_state::GameState,
-    play::ActionId,
-    player::{Player, PlayerId},
-};
+use crate::{card::Card, event::EventEntry, game_state::GameState, play::ActionId, player::Player};
 
 use rand::seq::SliceRandom;
 
@@ -32,25 +24,6 @@ impl GameLobby {
         self.players.iter().map(|p| p.name()).collect::<Vec<_>>()
     }
 
-    fn filter_event(log: &[EventEntry], visible_to: Option<PlayerId>) -> Vec<Event> {
-        log.iter()
-            .map(|e| match e.visibility {
-                EventVisibility::Public => e.event.clone(),
-                EventVisibility::Private(player) => {
-                    if visible_to.is_none() || player == visible_to.unwrap() {
-                        e.event.clone()
-                    } else {
-                        match e.event {
-                            Event::PickUp(p, _, s) => Event::PickUp(p, None, s),
-                            Event::LearnedCard(p, _) => Event::LearnedCard(p, None),
-                            _ => e.event.clone(),
-                        }
-                    }
-                }
-            })
-            .collect()
-    }
-
     pub fn play_round(&mut self) {
         let mut game_log: Vec<EventEntry> = vec![];
 
@@ -71,7 +44,7 @@ impl GameLobby {
 
             let chosen_action: ActionId = self.players[players_turn.unwrap()].obtain_action(
                 &self.player_names(),
-                &GameLobby::filter_event(&game_log, players_turn),
+                &GameState::filter_event(&game_log, players_turn),
                 &actions,
             );
 
@@ -79,7 +52,7 @@ impl GameLobby {
 
             for (i, p) in self.players.iter().enumerate() {
                 p.notify(
-                    &GameLobby::filter_event(&game_log, Some(i)),
+                    &GameState::filter_event(&game_log, Some(i)),
                     &self.player_names(),
                 );
             }

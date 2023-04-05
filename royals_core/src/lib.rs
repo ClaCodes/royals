@@ -6,6 +6,7 @@ use random_playing_computer::RandomPlayingComputer;
 pub mod card;
 pub mod event;
 mod game_lobby;
+mod game_logic;
 mod game_state;
 pub mod play;
 pub mod player;
