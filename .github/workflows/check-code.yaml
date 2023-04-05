@@ -53,7 +53,7 @@ jobs:
       - name: Install
         run: rustup component add clippy
       - name: Lint
-        run: cargo clippy
+        run: cargo clippy -- -Dwarnings
   # First needs to be fixed before activating
   # dependency_check:
   #   runs-on: ubuntu-latest
