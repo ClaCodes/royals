@@ -64,6 +64,27 @@ impl Card {
         )
     }
 
+    pub fn deck() -> [Card; 16] {
+        [
+            Card::Guard,
+            Card::Guard,
+            Card::Guard,
+            Card::Guard,
+            Card::Guard,
+            Card::Priest,
+            Card::Priest,
+            Card::Baron,
+            Card::Baron,
+            Card::Maid,
+            Card::Maid,
+            Card::Prince,
+            Card::Prince,
+            Card::King,
+            Card::Countess,
+            Card::Princess,
+        ]
+    }
+
     fn value(&self) -> u8 {
         *self as u8 + 1
     }

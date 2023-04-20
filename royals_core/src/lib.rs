@@ -1,9 +1,11 @@
 use event::Event;
-use game_state::GameState;
+use game_lobby::GameLobby;
 use player::Player;
+use random_playing_computer::RandomPlayingComputer;
 
 pub mod card;
 pub mod event;
+mod game_lobby;
 mod game_logic;
 mod game_state;
 pub mod play;
@@ -16,6 +18,10 @@ where
     C: FnOnce() -> T,
     T: Player + 'static,
 {
-    let mut game = GameState::new(player_constructor);
-    game.run()
+    let mut lobby = GameLobby::new();
+    lobby.add_player(player_constructor);
+    lobby.add_player(RandomPlayingComputer::new);
+    lobby.add_player(RandomPlayingComputer::new);
+    lobby.add_player(RandomPlayingComputer::new);
+    lobby.play_round();
 }

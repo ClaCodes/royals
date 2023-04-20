@@ -1,78 +1,151 @@
-use std::collections::HashSet;
-
-use rand::seq::SliceRandom;
+use itertools::{iproduct, Itertools};
+use std::{collections::HashSet, iter::once};
+use strum::IntoEnumIterator;
 
 use crate::{
     card::Card,
     event::EventEntry,
-    player::{Player, PlayerId},
-    random_playing_computer::RandomPlayingComputer,
+    play::{Action, Play},
+    player::PlayerId,
 };
 
-pub struct GameState {
-    pub deck: Vec<Card>,
-    pub players: Vec<Box<dyn Player>>,
-    pub game_log: Vec<EventEntry>,
-    pub players_turn: PlayerId,
+pub struct PlayerState {
+    protected: bool,
+    hand: Vec<Card>,
 }
 
-impl GameState {
-    pub fn new<C, T>(player_constructor: C) -> Self
-    where
-        C: FnOnce() -> T,
-        T: Player + 'static,
-    {
-        let mut state = GameState {
-            deck: vec![
-                Card::Guard,
-                Card::Guard,
-                Card::Guard,
-                Card::Guard,
-                Card::Guard,
-                Card::Priest,
-                Card::Priest,
-                Card::Baron,
-                Card::Baron,
-                Card::Maid,
-                Card::Maid,
-                Card::Prince,
-                Card::Prince,
-                Card::King,
-                Card::Countess,
-                Card::Princess,
-            ],
-            players: vec![],
-            game_log: vec![],
-            players_turn: 0,
-        };
-
-        state.add_player(player_constructor);
-        state.add_player(RandomPlayingComputer::new);
-        state.add_player(RandomPlayingComputer::new);
-        state.add_player(RandomPlayingComputer::new);
-
-        //state.players.shuffle(&mut rand::thread_rng()); todo
-
-        state.deck.shuffle(&mut rand::thread_rng());
-
-        for i in 0..state.players.len() {
-            state.pick_up_card(i);
+impl PlayerState {
+    fn new() -> Self {
+        PlayerState {
+            protected: false,
+            hand: vec![],
         }
+    }
+    pub fn protected(&self) -> bool {
+        self.protected
+    }
 
+    pub fn set_protected(&mut self, value: bool) {
+        self.protected = value;
+    }
+
+    pub fn hand(&self) -> &Vec<Card> {
+        &self.hand
+    }
+
+    pub fn hand_mut(&mut self) -> &mut Vec<Card> {
+        &mut self.hand
+    }
+
+    pub fn is_active(&self) -> bool {
+        !&self.hand().is_empty()
+    }
+}
+
+pub struct GameState<'a> {
+    pub players: Vec<PlayerState>,
+    pub played_card_count: usize,
+    pub players_turn: PlayerId,
+    pub deck: &'a [Card],
+}
+
+impl<'a> GameState<'a> {
+    pub fn new(player_count: usize, deck: &'a [Card], log: &mut Vec<EventEntry>) -> Self {
+        let mut state = GameState {
+            players: vec![],
+            played_card_count: 0,
+            players_turn: 0,
+            deck,
+        };
+        for i in 0..player_count {
+            state.players.push(PlayerState::new());
+            state.pick_up_card(i, log);
+        }
+        state.pick_up_card(state.players_turn, log);
         state
     }
-
-    fn add_player<C, T>(&mut self, player_constructor: C)
-    where
-        C: FnOnce() -> T,
-        T: Player + 'static,
-    {
-        let player = player_constructor();
-        self.players.push(Box::new(player));
+    pub fn valid_actions(&self) -> (Option<PlayerId>, Vec<Action>) {
+        let actions: Vec<Action> = once(Action::GiveUp)
+            .chain(self.possible_actions())
+            .filter(|a| self.is_valid(a))
+            .collect();
+        (
+            if actions.is_empty() {
+                None
+            } else {
+                Some(self.players_turn)
+            },
+            actions,
+        )
     }
 
-    pub fn player_names(&self) -> Vec<&String> {
-        self.players.iter().map(|p| p.name()).collect::<Vec<_>>()
+    pub fn possible_actions(&self) -> Vec<Action> {
+        // todo is there an alternative way to also iterate over None
+        let others = self.other_active_players();
+        let mut optional_players = others.iter().map(|p| Some(*p)).collect_vec();
+        optional_players.push(None);
+
+        let mut optional_card = Card::iter().map(Some).collect_vec();
+        optional_card.push(None);
+
+        iproduct!(Card::iter(), optional_players.iter(), optional_card.iter())
+            .map(|(card, &opponent, &guess)| {
+                Action::Play(Play {
+                    card,
+                    opponent,
+                    guess,
+                })
+            })
+            .collect_vec()
+    }
+
+    pub fn is_valid(&self, action: &Action) -> bool {
+        if self.game_over() {
+            return false;
+        }
+        match action {
+            Action::GiveUp => true,
+            Action::Play(play) => {
+                if !self.players[self.players_turn].hand().contains(&play.card) {
+                    return false;
+                }
+                if self.players[self.players_turn]
+                    .hand()
+                    .contains(&Card::Countess)
+                    && (play.card == Card::Prince || play.card == Card::King)
+                {
+                    return false;
+                }
+                if !play.card.needs_opponent() {
+                    if play.opponent.is_some() {
+                        return false;
+                    }
+                } else if !self.all_protected() && play.opponent.is_none() {
+                    return false;
+                }
+
+                if !play.card.needs_guess() {
+                    if play.guess.is_some() {
+                        return false;
+                    }
+                } else if !self.all_protected() && play.guess.is_none() {
+                    return false;
+                }
+
+                if let Some(op) = play.opponent {
+                    if op == self.players_turn {
+                        return false;
+                    }
+                    if op >= self.players.len() {
+                        return false;
+                    }
+                    if !self.players[op].is_active() {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
     }
 
     pub fn active_players(&self) -> HashSet<PlayerId> {
@@ -84,7 +157,7 @@ impl GameState {
             .collect()
     }
 
-    fn other_players(&self) -> HashSet<PlayerId> {
+    pub fn other_players(&self) -> HashSet<PlayerId> {
         self.players
             .iter()
             .enumerate()
@@ -105,44 +178,35 @@ impl GameState {
             .iter()
             .all(|&id| self.players[id].protected())
     }
+
+    pub fn game_over(&self) -> bool {
+        // last card is ussually not used
+        self.deck.len() - self.played_card_count <= 1 || self.active_players().len() <= 1
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
 
-    use crate::{
-        card::Card,
-        event::Event,
-        game_state::GameState,
-        play::Action,
-        player::{Player, PlayerData, PlayerId},
-    };
-
-    #[test]
-    fn player_names_should_return_list_of_names() {
-        let state = GameState {
-            deck: vec![],
-            players: vec![
-                Box::new(TestPlayer::new(0, "Foo", false, vec![])),
-                Box::new(TestPlayer::new(1, "Bar", false, vec![])),
-            ],
-            game_log: vec![],
-            players_turn: 0,
-        };
-
-        assert_eq!(state.player_names(), vec!["Foo", "Bar"]);
-    }
+    use crate::{card::Card, game_state::GameState, game_state::PlayerState};
 
     #[test]
     fn active_players_should_return_player_ids_with_non_empty_hand() {
+        let deck = &Card::deck();
         let state = GameState {
-            deck: vec![],
+            deck,
             players: vec![
-                Box::new(TestPlayer::new(0, "Foo", false, vec![])),
-                Box::new(TestPlayer::new(1, "Bar", false, vec![Card::King])),
+                PlayerState {
+                    protected: false,
+                    hand: vec![],
+                },
+                PlayerState {
+                    protected: false,
+                    hand: vec![Card::King],
+                },
             ],
-            game_log: vec![],
+            played_card_count: 0,
             players_turn: 0,
         };
 
@@ -151,15 +215,25 @@ mod tests {
 
     #[test]
     fn other_players_should_return_ids_of_others() {
+        let deck = &Card::deck();
         let state = GameState {
-            deck: vec![],
+            deck,
             players: vec![
-                Box::new(TestPlayer::new(0, "Foo", false, vec![])),
-                Box::new(TestPlayer::new(1, "Bar", false, vec![])),
-                Box::new(TestPlayer::new(2, "Baz", false, vec![])),
+                PlayerState {
+                    protected: false,
+                    hand: vec![],
+                },
+                PlayerState {
+                    protected: false,
+                    hand: vec![],
+                },
+                PlayerState {
+                    protected: false,
+                    hand: vec![],
+                },
             ],
-            game_log: vec![],
-            players_turn: 1, // Baz's turn
+            played_card_count: 0,
+            players_turn: 1, // second player turn
         };
 
         assert_eq!(state.other_players(), HashSet::from([0, 2]));
@@ -167,15 +241,25 @@ mod tests {
 
     #[test]
     fn all_protected_should_return_true_if_no_other_active_player_is_unprotected() {
+        let deck = &Card::deck();
         let state = GameState {
-            deck: vec![],
+            deck,
             players: vec![
-                Box::new(TestPlayer::new(0, "Foo", false, vec![])), // inactive
-                Box::new(TestPlayer::new(1, "Baz", false, vec![Card::King])), // Baz' turn
-                Box::new(TestPlayer::new(2, "Bar", true, vec![])),  // protected
+                PlayerState {
+                    protected: false,
+                    hand: vec![],
+                }, // inactive
+                PlayerState {
+                    protected: false,
+                    hand: vec![Card::King],
+                }, // players turn
+                PlayerState {
+                    protected: true,
+                    hand: vec![Card::Countess],
+                }, // protected
             ],
-            game_log: vec![],
-            players_turn: 1, // Baz' turn
+            played_card_count: 0,
+            players_turn: 1, // second players turn
         };
 
         assert_eq!(state.all_protected(), true);
@@ -183,58 +267,31 @@ mod tests {
 
     #[test]
     fn all_protected_should_return_false_if_at_least_one_other_active_player_is_unprotected() {
+        let deck = &Card::deck();
         let state = GameState {
-            deck: vec![],
+            deck,
             players: vec![
-                Box::new(TestPlayer::new(0, "Foo", false, vec![])), // inactive
-                Box::new(TestPlayer::new(1, "Baz", false, vec![Card::King])), // Baz' turn
-                Box::new(TestPlayer::new(2, "Bar", true, vec![])),  // protected
-                Box::new(TestPlayer::new(3, "Qux", false, vec![Card::Guard])), // unprotected
+                PlayerState {
+                    protected: false,
+                    hand: vec![],
+                }, // inactive
+                PlayerState {
+                    protected: false,
+                    hand: vec![Card::King],
+                }, // players turn
+                PlayerState {
+                    protected: true,
+                    hand: vec![Card::Countess],
+                }, // protected
+                PlayerState {
+                    protected: false,
+                    hand: vec![Card::Guard],
+                }, // unprotected
             ],
-            game_log: vec![],
-            players_turn: 1, // Baz' turn
+            played_card_count: 0,
+            players_turn: 1, // second players turn
         };
 
         assert_eq!(state.all_protected(), false);
-    }
-
-    // Infra ----------------------------------------------------------------
-
-    pub struct TestPlayer {
-        pub data: PlayerData,
-    }
-
-    impl TestPlayer {
-        pub fn new(id: PlayerId, name: &str, protected: bool, hand: Vec<Card>) -> Self {
-            let mut player = TestPlayer {
-                data: PlayerData::new(name.to_string()),
-            };
-            player.set_protected(protected);
-            *player.hand_mut() = hand;
-            player
-        }
-    }
-
-    impl Player for TestPlayer {
-        fn data(&self) -> &PlayerData {
-            &self.data
-        }
-
-        fn data_mut(&mut self) -> &mut PlayerData {
-            &mut self.data
-        }
-
-        fn notify(&self, _game_log: &[Event], _players: &[&String]) {
-            todo!()
-        }
-
-        fn obtain_action(
-            &self,
-            _players: &[&String],
-            _game_log: &[Event],
-            _actions: &[Action],
-        ) -> usize {
-            todo!()
-        }
     }
 }
