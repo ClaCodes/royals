@@ -1,5 +1,6 @@
-use itertools::{iproduct, Itertools};
 use std::{collections::HashSet, iter::once};
+
+use itertools::{iproduct, Itertools};
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -38,7 +39,7 @@ impl PlayerState {
     }
 
     pub fn is_active(&self) -> bool {
-        !&self.hand().is_empty()
+        !self.hand().is_empty()
     }
 }
 

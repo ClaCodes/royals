@@ -4,9 +4,7 @@ members = [
     "royals_core",
     "royals_ui_cli",
     "royals_ui_bevy",
+    "royals_redux_experiment",
+    "websocket_experiment",
 ]
 resolver = "2"
-
-[workspace.dependencies]
-rustfmt = "1.5.1"
-clippy = "1.68.0"

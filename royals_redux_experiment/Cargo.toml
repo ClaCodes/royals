@@ -1,0 +1,13 @@
+[package]
+name = "royals_redux_experiment"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.20"
+rand = { version = "0.8.5", features = [] }
+redux-rs = { version = "0.3.3", features = ["middleware_logger", "middleware_thunk"] }
+tokio = { version = "^1", features = ["full"] }
+async-trait = "0.1.69"

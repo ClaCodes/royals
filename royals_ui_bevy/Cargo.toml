@@ -15,7 +15,7 @@ opt-level = 3
 
 [dependencies]
 royals_core = { path = "../royals_core" }
-itertools = "0.10.5"
-bevy = { version = "0.10.0" }
-bevy_egui = "0.20.1"
-anyhow = "1.0.70"
+itertools = "0.11.0"
+bevy = { version = "0.11.3" }
+bevy_egui = "0.21.0"
+anyhow = "1.0.75"
