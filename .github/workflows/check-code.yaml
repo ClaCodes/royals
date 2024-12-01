@@ -113,7 +113,7 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
       - name: Build cli
         run: |
-          cd royals_ui_cli
+          cd royals_server
           cargo build
   build_bevy:
     needs: [lint, format]

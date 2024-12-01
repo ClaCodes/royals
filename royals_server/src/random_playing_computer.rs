@@ -1,11 +1,7 @@
+use crate::player::{Player, PlayerData};
 use rand::Rng;
+use royals_core::events::{Action, Event};
 use std::sync::atomic::{AtomicUsize, Ordering};
-
-use crate::{
-    event::Event,
-    play::Action,
-    player::{Player, PlayerData},
-};
 
 static COMPUTER_NAMES: &[&str] = &["Computer Alpha", "Computer Bravo", "Computer Charlie"];
 static COMPUTER_COUNT: AtomicUsize = AtomicUsize::new(0);

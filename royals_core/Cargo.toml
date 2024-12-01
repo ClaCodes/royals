@@ -3,10 +3,9 @@ name = "royals_core"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 strum = "0.24"
 strum_macros = "0.24"
-rand = "0.7.0"
 itertools = "0.10.5"
+renet = {version = "0.0.15", features=["transport", "serde"]}
+serde = {version = "1.0", features = ["derive"]}

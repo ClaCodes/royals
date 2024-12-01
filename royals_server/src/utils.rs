@@ -14,16 +14,3 @@ impl<T> VecExtensions<T> for Vec<T> {
             .map(|index| self.remove(index))
     }
 }
-
-pub trait SliceExtensions<T> {
-    fn single_element(&self) -> Option<&T>;
-}
-
-impl<T> SliceExtensions<T> for [T] {
-    fn single_element(&self) -> Option<&T> {
-        match self.len() {
-            1 => self.iter().next(),
-            _ => None,
-        }
-    }
-}

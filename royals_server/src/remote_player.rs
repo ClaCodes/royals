@@ -1,33 +1,24 @@
+use crate::player::{Player, PlayerData};
+use royals_core::events::{Action, Event, GameEvent, NotifyEvent, ObtainActionEvent};
 use std::sync::mpsc::{Receiver, Sender};
 
-use royals_core::{
-    event::Event,
-    play::Action,
-    player::{Player, PlayerData},
-};
-
-use crate::{
-    events::{NotifyEvent, ObtainActionEvent},
-    GameEvent,
-};
-
-pub struct BevyPlayer {
+pub struct RemotePlayer {
     pub data: PlayerData,
     pub sender: Sender<GameEvent>,
     pub receiver: Receiver<usize>,
 }
 
-impl BevyPlayer {
-    pub fn new(sender: Sender<GameEvent>, receiver: Receiver<usize>) -> Self {
-        BevyPlayer {
-            data: PlayerData::new("Bevy player".to_string()),
+impl RemotePlayer {
+    pub fn new(name: String, sender: Sender<GameEvent>, receiver: Receiver<usize>) -> Self {
+        RemotePlayer {
+            data: PlayerData::new(name),
             sender,
             receiver,
         }
     }
 }
 
-impl Player for BevyPlayer {
+impl Player for RemotePlayer {
     fn data(&self) -> &PlayerData {
         &self.data
     }

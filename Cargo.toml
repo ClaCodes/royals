@@ -2,8 +2,8 @@
 
 members = [
     "royals_core",
-    "royals_ui_cli",
     "royals_ui_bevy",
+    "royals_server",
 ]
 resolver = "2"
 
