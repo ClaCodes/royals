@@ -5,18 +5,34 @@ use bevy_egui::{
     EguiContexts,
 };
 use itertools::Itertools;
+use std::{
+    collections::HashMap,
+    net::{SocketAddr, UdpSocket},
+    time::{Duration, Instant, SystemTime},
+};
+use bevy_renet::{
+    renet::{
+        transport::{ClientAuthentication, NetcodeClientTransport},
+        ConnectionConfig, DefaultChannel, RenetClient,
+    },
+    transport::NetcodeClientPlugin,
+    RenetClientPlugin,
+};
 use royals_core::{
     events,
     events::{Action, ClientEvent, Play},
 };
+use royals_core::{events::GameEvent, user_name::Username};
 
 #[derive(Component)]
 pub struct ClientEventComponent {
     pub e: ClientEvent,
 }
 
-pub fn ui_system(mut commands: Commands, mut contexts: EguiContexts, game_state: Res<GameState>) {
+pub fn ui_system(mut commands: Commands, mut contexts: EguiContexts, mut game_state:ResMut<GameState>,
+    mut transport: Option<ResMut<NetcodeClientTransport>>) {
     let egui_context = contexts.ctx_mut();
+
     SidePanel::left("left_panel")
         .min_width(600.0)
         .default_width(600.0)
@@ -25,6 +41,39 @@ pub fn ui_system(mut commands: Commands, mut contexts: EguiContexts, game_state:
                 ui.label("Royals Bevy debug UI\n");
 
                 ScrollArea::vertical().drag_to_scroll(true).show(ui, |ui| {
+                    if let Some(t) = &mut transport
+                    {
+                        if ui.button("disconnect").clicked() {
+                            t.disconnect();
+                            commands.remove_resource::<NetcodeClientTransport>();
+                            game_state.as_mut().last_event = None;
+                        }
+                    } else {
+                        // Todo as component
+                        let mut name = "bevy".to_owned();
+                        let mut address = "127.0.0.1:6969".to_owned();
+                        let name_label = ui.label("Your name: ");
+                        ui.text_edit_singleline(&mut name).labelled_by(name_label.id);
+                        let address_label = ui.label("Server address: ");
+                        ui.text_edit_singleline(&mut address).labelled_by(address_label.id);
+                        if ui.button("connect").clicked() {
+                            let server_addr: SocketAddr = "127.0.0.1:6969".parse().unwrap();
+                            let username = Username::from_string("bevy".to_owned());
+                            let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
+                            let current_time = SystemTime::now()
+                                .duration_since(SystemTime::UNIX_EPOCH)
+                                .unwrap();
+                            let client_id = current_time.as_millis() as u64;
+                            let authentication = ClientAuthentication::Unsecure {
+                                server_addr,
+                                client_id,
+                                user_data: Some(username.to_netcode_user_data()),
+                                protocol_id: 0,
+                            };
+                            let transport = NetcodeClientTransport::new(current_time, authentication, socket).unwrap();
+                            commands.insert_resource(transport)
+                        }
+                    }
                     if let Some(royals_core::events::GameEvent::ObtainAction(o)) =
                         &game_state.last_event
                     {

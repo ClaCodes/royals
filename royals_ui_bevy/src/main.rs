@@ -18,24 +18,8 @@ use ui::{ui_system, ClientEventComponent};
 pub mod ui;
 
 fn main() {
-    let server_addr: SocketAddr = "127.0.0.1:6969".parse().unwrap();
-    let username = Username::from_string("bevy".to_string());
     let connection_config = ConnectionConfig::default();
     let client = RenetClient::new(connection_config);
-
-    let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
-    let current_time = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap();
-    let client_id = current_time.as_millis() as u64;
-    let authentication = ClientAuthentication::Unsecure {
-        server_addr,
-        client_id,
-        user_data: Some(username.to_netcode_user_data()),
-        protocol_id: 0,
-    };
-
-    let transport = NetcodeClientTransport::new(current_time, authentication, socket).unwrap();
 
     App::new()
         // -----------------------------------------------------
@@ -45,7 +29,6 @@ fn main() {
         .add_plugins(EguiPlugin)
         // -----------------------------------------------------
         .insert_resource(client)
-        .insert_resource(transport)
         .insert_resource(GameState { last_event: None })
         // -----------------------------------------------------
         .add_systems(Update, send_message_system)
