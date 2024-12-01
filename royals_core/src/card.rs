@@ -1,8 +1,21 @@
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use strum::{EnumMessage, IntoEnumIterator};
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 
-#[derive(Debug, PartialEq, Copy, Clone, PartialOrd, Display, EnumIter, EnumString, EnumMessage)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Debug,
+    PartialEq,
+    Copy,
+    Clone,
+    PartialOrd,
+    Display,
+    EnumIter,
+    EnumString,
+    EnumMessage,
+)]
 pub enum Card {
     #[strum(
         message = "If you play this card, you may choose an opponent and attempt to guess their card. If you guess right they drop out of the game. You may not guess the Guard."

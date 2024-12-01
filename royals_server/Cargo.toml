@@ -1,0 +1,15 @@
+[package]
+name = "royals_server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+royals_core = { path = "../royals_core" }
+renet = {version = "0.0.16", features=["transport", "serde"]}
+env_logger = "0.11"
+tokio = { version = "1", features = ["full"] }
+itertools = "0.10.5"
+strum = "0.24"
+rand = "0.7.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

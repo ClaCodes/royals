@@ -1,4 +1,8 @@
-use crate::{card::Card, event::EventEntry, game_state::GameState, play::ActionId, player::Player};
+use crate::{game_logic::GameState, player::Player};
+use royals_core::{
+    card::Card,
+    events::{ActionId, EventEntry},
+};
 
 use rand::seq::SliceRandom;
 
@@ -63,11 +67,10 @@ impl GameLobby {
 #[cfg(test)]
 mod tests {
     use crate::{
-        event::Event,
         game_lobby::GameLobby,
-        play::Action,
         player::{Player, PlayerData},
     };
+    use royals_core::events::{Action, Event};
 
     #[test]
     fn player_names_should_return_list_of_names() {

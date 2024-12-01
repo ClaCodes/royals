@@ -1,6 +1,4 @@
-use crate::{play::Action, Event};
-
-pub type PlayerId = usize;
+use royals_core::events::{Action, Event};
 
 pub struct PlayerData {
     name: String,
